@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
    JORIS — Finance & KPIs
-   The whole business at a glance, for the people ticked to see it (Bernard
-   and Iain). Everything is worked out on the server from the records as
+   The whole business at a glance, for the people an owner has ticked to see
+   it. Everything is worked out on the server from the records as
    they are now; this page only draws it — no figure here is made up. The
    counts come first (RFPs, groups, people, conversion, markets); the money
    cards appear once there is money in JORIS to show, because the old

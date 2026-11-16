@@ -82,8 +82,9 @@
     'import.run':         'admin',
     /* JOR's own history — the RFP window and the OPS file — brought in once. */
     'history.import':     'admin',
-    'export.all':         { management: 'admin' },
-    /* The finance and KPI dashboard: only management ticked to see it (Bernard and Iain). */
+    /* Everything out as one workbook — every figure in the business: an owner only. */
+    'export.all':         'owner',
+    /* The finance and KPI dashboard: only management an owner has ticked to see it. */
     'finance.view':       { management: 'finance' }
   };
 
@@ -93,6 +94,7 @@
     const rule = PERMS[perm];
     if (!rule) return false;
     if (rule === 'admin') return person.admin === 'yes';
+    if (rule === 'owner') return person.owner === 'yes';
     const v = rule[person.role];
     if (v === 1) return true;
     if (v === 'admin') return person.admin === 'yes';

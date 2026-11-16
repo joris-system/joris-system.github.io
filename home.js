@@ -109,7 +109,7 @@
     if (!document.querySelector('.top')) UI.topBar('JORIS', 'Joe O’Reilly Ireland', me);
     const hour = new Date().getHours();
     $('#hello').textContent = (hour < 12 ? 'Good morning, ' : hour < 18 ? 'Good afternoon, ' : 'Good evening, ') + me.name.split(' ')[0];
-    $('#role').textContent = (RU.ROLES[me.role] || me.role) + (me.admin === 'yes' ? ' · admin' : '') + (me.team ? ' · ' + me.team : '');
+    $('#role').textContent = (RU.ROLES[me.role] || me.role) + (me.owner === 'yes' ? ' · owner' : me.admin === 'yes' ? ' · admin' : '') + (me.team ? ' · ' + me.team : '');
     $('#parts').innerHTML = UI.partsFor(me).filter(p => p.href).map(p => '<a class="part" href="' + esc(p.href) + '"><span class="ic">' + I(p.icon, 'lg') + '</span><div><b>' + esc(p.t) + '</b><span>' + esc(p.s) + '</span></div></a>').join('');
     $('#chpw').innerHTML = I('key', 'sm') + 'Change my password';
     $('#everywhere').innerHTML = I('out', 'sm') + 'Sign out on every computer';

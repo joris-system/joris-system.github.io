@@ -12,7 +12,7 @@
 
   function tabs() {
     const t = (isAdmin ? [['people', 'People'], ['numbers', 'Reference numbers'], ['settings', 'Settings']].concat(me.perms['history.import'] ? [['history', 'JOR’s history']] : [])
-      .concat([['import', 'Bring in a spreadsheet'], ['export', 'Export & backup']]) : []).concat(me.perms['audit.view'] ? [['log', 'Who changed what']] : []).concat(me.perms['bin.view'] ? [['bin', 'Bin']] : []);
+      .concat([['import', 'Bring in a spreadsheet']]).concat(me.perms['export.all'] ? [['export', 'Export & backup']] : []) : []).concat(me.perms['audit.view'] ? [['log', 'Who changed what']] : []).concat(me.perms['bin.view'] ? [['bin', 'Bin']] : []);
     $('#tabs').innerHTML = t.map(x => '<button data-tab="' + x[0] + '" class="' + (view === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('');
     $('#add').classList.toggle('hidden', !(isAdmin && view === 'people'));
     $('#add').innerHTML = I('plus', 'sm') + 'Add a person';
@@ -27,11 +27,13 @@
     const order = p => (p.status === 'left' ? 2 : 0) + (p.waiting ? 0 : 0);
     list.sort((a, b) => order(a) - order(b) || a.name.localeCompare(b.name));
     const state = p => p.status === 'left' ? '<span class="pill lost">left</span>' : p.locked ? '<span class="pill err">locked</span>' : p.waiting ? '<span class="pill warn">hasn’t signed in yet</span>' : '<span class="pill confirmed">active</span>';
+    /* An owner's login, or that of someone who sees every figure, is an owner's to change. */
+    const theirs = p => (p.owner === 'yes' || p.finance === 'yes') && me.owner !== 'yes' && p.id !== me.id;
     $('#view').innerHTML = '<div class="card tw"><table class="t"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Team</th><th>Admin</th><th>Login</th><th>Last seen</th><th></th></tr></thead><tbody>' +
       list.map(p => '<tr data-id="' + esc(p.id) + '"' + (p.status === 'left' ? ' class="dim"' : '') + '><td><b>' + esc(p.name) + '</b> <span class="mini">' + esc(p.initials) + '</span></td><td>' + esc(p.email) + '</td>' +
-        '<td>' + esc(RU.ROLES[p.role] || p.role) + '</td><td>' + esc(p.team) + '</td><td>' + (p.admin === 'yes' ? 'Yes' : '') + '</td><td>' + state(p) + '</td>' +
+        '<td>' + esc(RU.ROLES[p.role] || p.role) + (p.finance === 'yes' ? ' <span class="mini">· finance</span>' : '') + '</td><td>' + esc(p.team) + '</td><td>' + (p.owner === 'yes' ? 'Owner' : p.admin === 'yes' ? 'Yes' : '') + '</td><td>' + state(p) + '</td>' +
         '<td class="nw">' + esc(UI.when(p.lastSeen)) + '</td><td><div class="acts">' +
-        (p.status === 'active' ? '<button class="btn sm" data-act="edit">Edit</button><button class="btn sm" data-act="reset">' + (p.waiting ? 'New code' : 'Reset login') + '</button>' +
+        (theirs(p) ? '<span class="mini">An owner looks after this login</span>' : p.status === 'active' ? '<button class="btn sm" data-act="edit">Edit</button><button class="btn sm" data-act="reset">' + (p.waiting ? 'New code' : 'Reset login') + '</button>' +
           (p.locked ? '<button class="btn sm" data-act="unlock">Unlock</button>' : '') + '<button class="btn sm" data-act="devices">' + (p.devices ? p.devices + ' computer' + (p.devices === 1 ? '' : 's') : 'Computers') + '</button>' +
           (p.id !== me.id ? '<button class="btn sm dngr" data-act="left">Has left</button>' : '')
           : '<button class="btn sm" data-act="back">Back at JOR</button>') + '</div></td></tr>').join('') + '</tbody></table></div>' +
@@ -117,13 +119,15 @@
         UI.field('Initials', '<input class="in" name="initials" maxlength="4" value="' + esc(p.initials || '') + '" placeholder="from the name">') + '</div>' +
         UI.field('Phone', '<input class="in" name="phone" value="' + esc(p.phone || '') + '" placeholder="shown to guides when this person is their contact">') +
         '<label class="chk"><input type="checkbox" name="admin"' + (p.admin === 'yes' ? ' checked' : '') + '> Admin — can add people and reset logins</label>' +
-        '<label class="chk"><input type="checkbox" name="finance"' + (p.finance === 'yes' ? ' checked' : '') + '> Sees the finance dashboard — every figure in the business (management only)</label>' +
+        (me.owner === 'yes' ? '<label class="chk"><input type="checkbox" name="finance"' + (p.finance === 'yes' ? ' checked' : '') + '> Sees the finance dashboard — every figure in the business (management only)</label>' +
+          '<label class="chk"><input type="checkbox" name="owner"' + (p.owner === 'yes' ? ' checked' : '') + '> Owner — the only people who can give the finance dashboard, make another owner, take everything out as a workbook, or change an owner’s login</label>'
+          : '<p class="mini" style="margin:8px 0 0">Who sees the finance dashboard, and who is an owner, is for an owner to say.</p>') +
         '<div class="mini" style="margin:8px 0 4px">What each role can do: ' + roleHelp() + '</div><div class="err" data-err></div>',
       foot: '<button class="btn" data-x>Cancel</button><button class="btn p" data-ok>' + (p.id ? 'Save' : 'Add them') + '</button>',
       on: (el, close) => el.querySelector('[data-ok]').addEventListener('click', async () => {
         const v = n => el.querySelector('[name=' + n + ']').value.trim();
         try {
-          const r = await JOR.call('people.save', { person: { id: p.id, name: v('name'), email: v('email'), role: v('role'), team: v('team'), initials: v('initials'), phone: v('phone'), admin: el.querySelector('[name=admin]').checked ? 'yes' : '', finance: el.querySelector('[name=finance]').checked ? 'yes' : '' } });
+          const r = await JOR.call('people.save', { person: { id: p.id, name: v('name'), email: v('email'), role: v('role'), team: v('team'), initials: v('initials'), phone: v('phone'), admin: el.querySelector('[name=admin]').checked ? 'yes' : '', finance: (el.querySelector('[name=finance]') || {}).checked ? 'yes' : '', owner: (el.querySelector('[name=owner]') || {}).checked ? 'yes' : '' } });
           close();
           if (r.code) showCode(Object.assign({ email: v('email') }, r.person), r.code); else UI.toast('Saved.');
           people();
@@ -403,10 +407,10 @@
 
   /* ══ Export and backup ══════════════════════════════════════════════ */
   function exporter() {
-    /* Every figure in the business is in it, so only management take it out. */
+    /* Every figure in the business is in it, so only an owner takes it out. */
     const may = !!me.perms['export.all'];
     $('#view').innerHTML = '<div class="card pad"><h3>' + I('down', 'sm') + 'Everything, as a workbook</h3><p>Every record — files, notes, bookings, payments, bills, costings, suppliers, rates, agents, contacts, people (without passwords), the log — a tab each. Keep a copy somewhere safe and private: every figure in the business is in it. It is also how the records would move to anything else.</p>' +
-      (may ? '<div class="acts"><button class="btn p" id="xall">' + I('down', 'sm') + 'Download it</button></div><div class="mini" id="xn"></div>' : '<p class="mini">Only an admin in management can take it out.</p>') + '</div>' +
+      (may ? '<div class="acts"><button class="btn p" id="xall">' + I('down', 'sm') + 'Download it</button></div><div class="mini" id="xn"></div>' : '<p class="mini">Only an owner can take it out.</p>') + '</div>' +
       '<div class="card pad" style="margin-top:14px"><h3>' + I('clock', 'sm') + 'The copy every evening</h3><p>The records sheet copies itself into a Backups folder on JOR’s Google Drive every evening at about eight. It keeps every night for 30 days, one a week for a year and one a month for seven years. It is switched on once, from the Apps Script editor: run <b>installNightlyBackup</b>. Share that folder, and the records sheet itself, with no one: the app doesn’t need anyone else to have them.</p></div>';
     if (!may) return;
     $('#xall').addEventListener('click', async () => {

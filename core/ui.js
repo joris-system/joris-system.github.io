@@ -322,7 +322,7 @@ window.UI = (function () {
     { href: 'contacts/', icon: 'users', t: 'Agents & contacts', s: 'JOR’s own database: agents’ terms, contacts, mailings', perm: 'agents.view' },
     { href: 'guidefile/', icon: 'doc', t: 'Guide files', s: 'Documents on the guide’s phone', perm: 'guide.office' },
     { href: 'complaints/', icon: 'msg', t: 'Complaints', s: 'The complaint form and its QR codes, and putting things right', perm: 'complaints.view' },
-    { href: 'finance/', icon: 'euro', t: 'Finance & KPIs', s: 'Sales, margin, cash and the season — Bernard and Iain', perm: 'finance.view' },
+    { href: 'finance/', icon: 'euro', t: 'Finance & KPIs', s: 'Sales, margin, cash and the season — for those ticked to see it', perm: 'finance.view' },
     { href: 'register/#dashboard', icon: 'chart', t: 'Dashboard', s: 'Turnaround, workloads, overdue follow-ups', perm: 'register.dashboard' },
     { href: 'admin/', icon: 'key', t: 'People & settings', s: 'Logins, roles, settings, import and export, the log', perm: 'people.manage' },
     { href: 'admin/#log', icon: 'clock', t: 'Who changed what', s: 'Every change and sign-in', perm: 'audit.view', notIf: 'people.manage' }
