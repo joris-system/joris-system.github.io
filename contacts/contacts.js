@@ -14,9 +14,11 @@
   const edit = !!me.perms['agents.edit'];
   let view = location.hash === '#contacts' ? 'contacts' : location.hash === '#mailing' ? 'mailing' : 'agents', data = null, people = [];
   const filt = { q: '', consent: '' };
+  /* The agents, and who works here (for the names): asked for together. */
   async function load() {
-    data = await JOR.call('agents.list');
-    try { people = (await JOR.call('register.list')).people; } catch (e) { people = []; }
+    const [a, s] = await Promise.all([JOR.call('agents.list'), JOR.call('settings.get').catch(() => ({ people: [] }))]);
+    data = a; people = s.people || [];
+    JOR.keep('agents.list', null, a); if (s.settings) JOR.keep('settings.get', null, s);
   }
   const nameOf = id => (people.find(p => p.id === id) || {}).name || '';
   const agentName = k => (data.agents.find(a => a.key === k) || {}).name || '';
@@ -134,6 +136,10 @@
   }
   $('#add').addEventListener('click', () => contactForm());
 
+  /* What this tab last saw, at once; the fresh copy behind, drawn if anything changed. */
+  const a0 = JOR.last('agents.list'), s0 = JOR.last('settings.get');
+  let shown = '';
+  if (a0 && s0) { data = a0; people = s0.people || []; shown = JSON.stringify([a0, people]); render(); }
   try { await load(); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
-  render();
+  if (JSON.stringify([data, people]) !== shown) render();
 })();

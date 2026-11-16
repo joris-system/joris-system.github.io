@@ -21,7 +21,7 @@
   const nameOf = id => (data.people.find(p => p.id === id) || {}).name || '';
   const short = id => nameOf(id).split(' ')[0];
   const PAY = RU.PAYMENTS, PS = RU.PAY_STATUS, BS = RU.BILL_STATUS;
-  async function load() { data = await JOR.call('money.list'); }
+  async function load() { data = await JOR.call('money.list'); JOR.keep('money.list', null, data); }
 
   function tabs() {
     const t = [['invoices', 'Invoices to clients'], ['debtors', 'Waiting to be paid'], ['bills', 'Suppliers’ bills'], ['risk', 'At risk']];
@@ -174,7 +174,13 @@
       ((bl.status === 'tocheck' || bl.status === 'query') && billIn ? b('editbill', 'Change') : '') + '</div></div>';
   }
 
-  async function refresh(msg) { await load(); render(); if (openRef) { fileData = await JOR.call('money.file', { ref: openRef }); paintFile(); } if (msg) UI.toast(msg); }
+  async function refresh(msg) {
+    /* The list and the open file are asked for together, not one after the other. */
+    const ref = openRef, file = ref ? JOR.call('money.file', { ref: ref }).catch(() => null) : null;
+    await load(); render();
+    if (file) { const f = await file; if (f && openRef === ref) { fileData = f; paintFile(); } }
+    if (msg) UI.toast(msg);
+  }
   async function act(fn, msg) { try { await fn(); await refresh(msg); } catch (e) { if (e.stale) { await refresh(); UI.toast(e.message, 6000); } else UI.toast(e.message, 5000); } }
   const ask = (title, body, ok, run, danger) => UI.dialog({
     title: title, body: body + '<div class="err" data-err></div>', foot: '<button class="btn" data-x>Cancel</button><button class="btn ' + (danger ? 'dngr' : 'p') + '" data-ok>' + esc(ok) + '</button>',
@@ -233,8 +239,7 @@
   }
   $('#newbill').addEventListener('click', () => billForm({}));
 
-  try { await load(); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
-  render();
+  try { await JOR.live('money.list', null, r => { data = r; render(); }); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
   if (qs.get('ref')) openFile(qs.get('ref'));
   window.addEventListener('hashchange', () => { const r = new URLSearchParams(location.hash.slice(1)).get('ref'); if (r && r !== openRef) openFile(r); });
   window.JORMONEY = { data: () => data, openFile: openFile };

@@ -14,7 +14,7 @@
   let view = location.hash === '#chase' ? 'chase' : 'suppliers', data = null, openId = null;
   const thisYear = +D.today().slice(0, 4);
   const filt = { q: '', type: '', year: String(thisYear + 1) };
-  async function load() { data = await JOR.call('suppliers.list'); }
+  async function load() { data = await JOR.call('suppliers.list'); JOR.keep('suppliers.list', null, data); }
   const ratesOf = id => data.rates.filter(r => r.supplierId === id).sort((a, b) => b.year.localeCompare(a.year) || a.label.localeCompare(b.label));
   const latest = id => { const r = ratesOf(id); return r.length ? r[0].year : ''; };
 
@@ -152,7 +152,6 @@
   }
   $('#add').addEventListener('click', () => supplierForm());
 
-  try { await load(); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
-  render();
+  try { await JOR.live('suppliers.list', null, r => { data = r; render(); }); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
   window.JORRATES = { data: () => data, openSupplier: openSupplier };
 })();

@@ -38,12 +38,17 @@
   }
 
   async function load() {
-    $('#view').innerHTML = '<div class="empty">Working out the figures…</div>';
-    try { d = await JOR.call('finance.view', { season: season }); }
+    /* The figures as this tab last saw them, at once; worked out again behind, and drawn if any changed. */
+    const asked = { season: season }, seen = JOR.last('finance.view', asked);
+    let shown = '';
+    if (seen) { shown = JSON.stringify(seen); d = seen; season = d.season; draw(); }
+    else $('#view').innerHTML = '<div class="empty">Working out the figures…</div>';
+    try { d = await JOR.call('finance.view', asked); }
     catch (e) { $('#view').innerHTML = '<div class="card pad empty">' + esc(e.message) + '</div>'; return; }
+    JOR.keep('finance.view', asked, d);
     season = d.season;
     history.replaceState(null, '', '#season=' + season);
-    draw();
+    if (JSON.stringify(d) !== shown) draw();
   }
 
   function draw() {

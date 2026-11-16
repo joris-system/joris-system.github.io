@@ -18,8 +18,9 @@
     setTimeout(() => $('#email').focus(), 30);
   }
 
-  function arrive(token, keep) {
+  function arrive(token, keep, who) {
     JOR.setToken(token, keep);
+    if (who) JOR.keepMe(who);
     if (safeNext) { location.href = JOR.ROOT + safeNext; return; }
     history.replaceState(null, '', location.pathname);
     home();
@@ -46,7 +47,7 @@
         setTimeout(() => $('#pw1').focus(), 30);
         return;
       }
-      arrive(r.token, $('#keep').checked);
+      arrive(r.token, $('#keep').checked, r.me);
     } catch (e) { $('#err').textContent = e.message; }
     finally { $('#go').disabled = false; $('#pw').value = ''; }
   });
@@ -58,7 +59,7 @@
     $('#go3').disabled = true; $('#err3').textContent = '';
     try {
       const r = await JOR.call('auth.device', { pending: pendingCode, code: code, remember: $('#remember').checked });
-      arrive(r.token, keepWanted && $('#remember').checked);
+      arrive(r.token, keepWanted && $('#remember').checked, r.me);
     } catch (e) {
       $('#err3').textContent = e.message;
       if (/run out|sign in again/i.test(e.message)) setTimeout(() => showGate(e.message), 1600);
@@ -72,7 +73,7 @@
     $('#go2').disabled = true; $('#err2').textContent = '';
     try {
       const r = await JOR.call('auth.choose', { setup: setupToken, password: a, device: JOR.device(), label: JOR.deviceLabel() });
-      arrive(r.token, $('#keep').checked);
+      arrive(r.token, $('#keep').checked, r.me);
     } catch (e) { $('#err2').textContent = e.message; }
     finally { $('#go2').disabled = false; }
   });
@@ -103,8 +104,13 @@
   }
 
   async function home() {
-    try { me = (await JOR.call('auth.me', {}, { quiet: true })).me; }
-    catch (e) { if (e.signin) { JOR.clearToken(); showGate(e.message); } else showGate(e.message); return; }
+    /* Who this is: remembered from signing in, so the page is there at once; asked only if it isn't. */
+    const seen = JOR.meKept();
+    if (seen) { me = seen.me; JOR.me().catch(() => { }); }
+    else {
+      try { me = (await JOR.call('auth.me', {}, { quiet: true })).me; JOR.keepMe(me); }
+      catch (e) { if (e.signin) { JOR.clearToken(); showGate(e.message); } else showGate(e.message); return; }
+    }
     $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');
     if (!document.querySelector('.top')) UI.topBar('JORIS', 'Joe O’Reilly Ireland', me);
     const hour = new Date().getHours();
@@ -116,23 +122,35 @@
     $('#devs').innerHTML = I('lock', 'sm') + 'My computers and phones';
     $('#off').innerHTML = I('cal', 'sm') + 'I’m off — who covers?';
     if (me.perms['tasks.give']) { $('#give').classList.remove('hidden'); $('#give').innerHTML = I('plus', 'sm') + 'Give someone a task'; }
-    try { people = (await JOR.call('settings.get')).people; } catch (e) { people = []; }
-    await todo();
-    if (me.perms['todo.others']) team();
+    /* The lists are asked for together, not one after another; what this tab last saw shows meanwhile. */
+    const seenPeople = JOR.last('settings.get');
+    if (seenPeople) people = seenPeople.people || [];
+    const pp = JOR.call('settings.get').then(r => { people = r.people || []; JOR.keep('settings.get', null, r); if (teamSeen) paintTeam(teamSeen); }).catch(() => { });
+    await Promise.all([pp, todo(true), me.perms['todo.others'] ? team(true) : null]);
   }
 
-  async function todo() {
-    let r;
-    try { r = await JOR.call('todo.list'); } catch (e) { $('#todo').innerHTML = '<div class="card pad empty">' + esc(e.message) + '</div>'; return; }
+  async function todo(first) {
+    try {
+      if (first) await JOR.live('todo.list', null, paintTodo);
+      else { const r = await JOR.call('todo.list'); JOR.keep('todo.list', null, r); paintTodo(r); }
+    } catch (e) { $('#todo').innerHTML = '<div class="card pad empty">' + esc(e.message) + '</div>'; }
+  }
+  function paintTodo(r) {
     $('#cover').innerHTML = (r.covering.length ? '<div class="warnbox">You are covering for ' + r.covering.map(c => '<b>' + esc(c.name) + '</b> until ' + esc(UI.nice(c.until, true))).join(', ') + ' — their things to do are on your list, marked.</div>' : '') +
       (r.coverBy ? '<div class="okbox">' + esc(r.coverBy.name) + ' is covering for you until ' + esc(UI.nice(r.coverBy.until, true)) + '. <a href="#" id="endcover">I’m back</a></div>' : '');
     const ec = $('#endcover');
     if (ec) ec.addEventListener('click', async e => { e.preventDefault(); try { await JOR.call('cover.set', { coverBy: '' }); UI.toast('Welcome back.'); todo(); } catch (x) { UI.toast(x.message); } });
     $('#todo').innerHTML = listHtml(r.items);
   }
-  async function team() {
-    let r;
-    try { r = await JOR.call('todo.team'); } catch (e) { return; }
+  let teamSeen = null;
+  async function team(first) {
+    try {
+      if (first) await JOR.live('todo.team', null, paintTeam);
+      else { const r = await JOR.call('todo.team'); JOR.keep('todo.team', null, r); paintTeam(r); }
+    } catch (e) { /* the page works without it */ }
+  }
+  function paintTeam(r) {
+    teamSeen = r;
     $('#team').innerHTML = '<div class="todohead"><h2>Everyone’s lists</h2></div><div class="card tw"><table class="t"><thead><tr><th>Who</th><th>Role</th><th class="num">Things to do</th><th class="num">Today or urgent</th><th class="num">Overdue</th><th>Covered by</th><th></th></tr></thead><tbody>' +
       r.people.sort((a, b) => b.high - a.high || b.open - a.open).map(p => '<tr><td><b>' + esc(p.name) + '</b></td><td>' + esc(RU.ROLES[p.role] || p.role) + '</td><td class="num">' + p.open + '</td>' +
         '<td class="num' + (p.high ? ' late' : '') + '">' + p.high + '</td><td class="num' + (p.overdue ? ' late' : '') + '">' + p.overdue + '</td><td>' + esc(p.coverBy ? nameOf(p.coverBy) + ' until ' + UI.nice(p.coverUntil) : '') + '</td>' +
@@ -214,6 +232,7 @@
         try {
           const r = await JOR.call('auth.password', { old: v('old'), password: v('pw1') });
           JOR.setToken(r.token, JOR.kept());
+          JOR.keepMe(me);
           close(); UI.toast('Password changed. Anywhere else you were signed in has been signed out.');
         } catch (e) { el.querySelector('[data-err]').textContent = e.message; }
       })

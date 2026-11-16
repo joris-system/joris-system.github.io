@@ -16,7 +16,7 @@
   let files = [], q = '', ref = new URLSearchParams(location.hash.slice(1)).get('ref') || '', data = null, cur = null, dirty = false, seq = 0;
 
   /* Only the files whose prices this person may see: their own (and any they cover), or all for management. */
-  async function loadFiles() { files = (await JOR.call('register.list')).files.filter(f => f.status !== 'lost' && can('costing.view', f)); paintFiles(); }
+  async function loadFiles() { await JOR.live('register.list', null, r => { files = r.files.filter(f => f.status !== 'lost' && can('costing.view', f)); paintFiles(); }); }
   function paintFiles() {
     const qq = q.toLowerCase();
     const list = files.filter(f => !qq || (f.ref + ' ' + f.agent).toLowerCase().includes(qq)).sort((a, b) => ((a.am === me.id ? 0 : 1) - (b.am === me.id ? 0 : 1)) || ((a.arrival || '9') < (b.arrival || '9') ? -1 : 1)).slice(0, 60);

@@ -28,6 +28,7 @@
 
   async function load() {
     const r = await JOR.call('register.list');
+    JOR.keep('register.list', null, r);
     data = r;
   }
 
@@ -274,9 +275,11 @@
 
   /* After any change: the board and the open file, both fresh. */
   async function refresh(ref, msg) {
+    /* The list and the open file are asked for together, not one after the other. */
+    const file = ref && openRef === ref ? openFile(ref) : null;
     await load();
     if (view === 'board') board();
-    if (ref && openRef === ref) await openFile(ref);
+    if (file) await file;
     if (msg) UI.toast(msg);
   }
   async function act(ref, fn, msg) {
@@ -777,8 +780,7 @@
   }
 
   /* ══ Start ══════════════════════════════════════════════════════════ */
-  try { await load(); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
-  render();
+  try { await JOR.live('register.list', null, r => { data = r; render(); }); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
   const want = new URLSearchParams(location.hash.slice(1)).get('ref');
   if (want) openFile(want);
   window.addEventListener('hashchange', () => { const r = new URLSearchParams(location.hash.slice(1)).get('ref'); if (r && r !== openRef) openFile(r); });

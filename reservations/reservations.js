@@ -21,7 +21,7 @@
   const fileOf = ref => data.files.find(f => f.ref === ref) || { ref: ref, rooming: {} };
   const nameOf = id => (data.people.find(p => p.id === id) || {}).name || '';
   const short = id => nameOf(id).split(' ')[0];
-  async function load() { data = await JOR.call('res.list'); }
+  async function load() { data = await JOR.call('res.list'); JOR.keep('res.list', null, data); }
 
   function tabs() {
     const t = [['todo', 'Needs doing'], ['requests', 'Requests'], ['bookings', 'Every booking']].concat(me.perms['res.exposure'] ? [['exposure', 'Exposure']] : []);
@@ -471,8 +471,7 @@
   }
 
   /* ══ Start ══════════════════════════════════════════════════════════ */
-  try { await load(); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
-  render();
+  try { await JOR.live('res.list', null, r => { data = r; render(); }); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
   if (qs.get('ref')) openFile(qs.get('ref'));
   window.addEventListener('hashchange', () => { const r = new URLSearchParams(location.hash.slice(1)).get('ref'); if (r && r !== openRef) openFile(r); });
   window.JORRES = { data: () => data, openFile: openFile };
