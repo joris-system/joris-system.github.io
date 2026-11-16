@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#00A66E">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net/npm/pdfjs-dist@6.3.289/ 'wasm-unsafe-eval'; worker-src 'self' blob: https://cdn.jsdelivr.net/npm/pdfjs-dist@6.3.289/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://cdn.jsdelivr.net/npm/pdfjs-dist@6.3.289/; font-src 'self' data: https://cdn.jsdelivr.net/npm/pdfjs-dist@6.3.289/; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>JOR Guide File</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Guide File">
+<link rel="stylesheet" href="style.css">
+<style>
+  main{max-width:720px;margin:0 auto;padding:12px 12px 90px}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);padding:8px 4px 4px}
+  .status.off{color:var(--warn)}
+  .status .bar{flex:1;height:4px;border-radius:99px;background:var(--line);overflow:hidden;max-width:160px}
+  .status .bar i{display:block;height:100%;background:var(--jor);width:0;transition:width .2s}
+  h2{font-family:var(--serif);font-size:19px;margin:18px 4px 8px}
+  h2 .mini{font-family:var(--sans);font-weight:400;margin-left:6px}
+  .today{background:linear-gradient(135deg,#00A66E,#00875A);color:#fff;border-radius:var(--r);padding:14px 14px 6px;margin-top:8px;box-shadow:var(--shadow)}
+  .today h3{margin:0 0 8px;font-family:var(--serif);font-size:20px}
+  .today h3 span{font-family:var(--sans);font-size:13px;font-weight:400;opacity:.9;margin-left:6px}
+  .today .doc{background:rgba(255,255,255,.12);border-color:transparent;color:#fff}
+  .today .doc .mini,.today .doc .st{color:rgba(255,255,255,.85)}
+  .today .empty{opacity:.9;font-size:14px;padding:0 0 10px}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .doc{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;min-height:60px}
+  .doc:active{transform:scale(.995)}
+  .doc .ic{width:40px;height:40px;border-radius:10px;background:var(--mist-2);color:var(--jor-dark);display:grid;place-items:center;flex:0 0 auto}
+  .today .doc .ic{background:rgba(255,255,255,.18);color:#fff}
+  .doc .nm{flex:1;min-width:0}
+  .doc .nm b{display:block;font-size:15px;line-height:1.3;word-break:break-word}
+  .doc .st{color:var(--jor-deep);flex:0 0 auto}
+  .doc .st.wait{color:var(--ink-3)}
+  .contact{padding:14px;margin-top:22px}
+  .contact h3{margin:0 0 2px;font-size:16px}
+  .contact .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .contact .row .btn{flex:1 1 140px}
+  .contact textarea{min-height:84px;resize:vertical;margin-top:10px}
+  .notes{white-space:pre-wrap;padding:12px 14px;margin-top:10px;font-size:14px;color:var(--ink-2)}
+  .foot{text-align:center;margin:26px 0 0}
+  .foot button{background:none;border:0;color:var(--ink-3);text-decoration:underline;cursor:pointer;font-size:13px}
+  .install{display:flex;align-items:center;gap:10px;padding:12px 14px;margin-top:10px;background:var(--gold-pale);border-color:#e6d7aa;font-size:14px}
+  .install .btn{margin-left:auto}
+  .blank{padding:22px 16px;text-align:center;color:var(--ink-3)}
+  .groups{display:flex;gap:8px;overflow-x:auto;padding:10px 2px 2px;-webkit-overflow-scrolling:touch}
+  .groups button{flex:0 0 auto;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;min-height:44px}
+  .groups button b{display:block;font-size:14px}
+  .groups button span{display:block;font-size:12px;color:var(--ink-3)}
+  .groups button.on{border-color:var(--jor);background:var(--mist-2);box-shadow:0 0 0 2px rgba(0,166,110,.18)}
+  .gatecard .btn.back{background:none;border:0;color:var(--ink-3);text-decoration:underline;margin-top:6px;min-height:36px}
+
+  /* The document, full screen */
+  #viewer{position:fixed;inset:0;z-index:50;background:#3a4a44;display:flex;flex-direction:column}
+  #viewer .top{background:#13251E}
+  #viewer .top .tt b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  #pages{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:10px 8px 40px;display:flex;flex-direction:column;align-items:center;gap:10px}
+  #pages canvas,#pages img{width:100%;max-width:900px;height:auto;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.35);border-radius:2px}
+  #pages .msg{color:#fff;text-align:center;padding:40px 18px;max-width:420px}
+  #pages .msg .btn{margin-top:14px}
+  #count{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;padding:10px 14px;font-size:15px;border-bottom:1px solid var(--line)}
+  #count .in{width:90px;min-height:40px;font-size:18px;text-align:center}
+  #count .btn{min-height:40px}
+</style>
+</head>
+<body>
+<div id="gate" class="hidden">
+  <div class="gatecard">
+    <img data-logo alt="JOR Ireland">
+    <h1>Guide file</h1>
+    <p>Type the code from the JOR office’s message. You only need to do this once on this phone.</p>
+    <input class="in" id="code" maxlength="9" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="ABCD 2345" inputmode="text">
+    <button class="btn p" id="go">Open my guide file</button>
+    <div class="err" id="gerr"></div>
+    <button class="btn back hidden" id="back">Back to my guide file</button>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="top">
+    <img data-logo alt="JOR">
+    <div class="tt"><b id="t-tour"></b><span id="t-sub"></span></div>
+    <button class="btn" id="refresh" title="Check for new documents" aria-label="Check for new documents"></button>
+  </div>
+  <main>
+    <div class="groups hidden" id="groups"></div>
+    <div class="status" id="status"></div>
+    <div id="install" class="card install hidden"></div>
+    <div id="today"></div>
+    <div id="sections"></div>
+    <div id="notes"></div>
+    <div class="card contact" id="contact"></div>
+    <div class="foot"><button id="addg">Add another group’s guide file</button> · <button id="forget">Remove this group from this phone</button></div>
+  </main>
+</div>
+
+<div id="viewer" class="hidden">
+  <div class="top">
+    <button class="btn" id="v-back" aria-label="Back"></button>
+    <div class="tt"><b id="v-name"></b><span id="v-sub"></span></div>
+    <button class="btn" id="v-share" aria-label="Share or save"></button>
+  </div>
+  <div id="count" class="hidden"></div>
+  <div id="pages"></div>
+</div>
+<div id="toast"></div>
+
+<script src="../core/config.js"></script>
+<script src="../core/brand.js"></script>
+<script src="gf.js"></script>
+<script src="guide.js"></script>
+</body>
+</html>

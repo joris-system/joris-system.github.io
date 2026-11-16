@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#00A66E">
+<title>Reservations — JORIS</title>
+<link rel="icon" href="../core/icon-192.png">
+<link rel="stylesheet" href="../core/style.css">
+<style>
+  .days{width:100%;border-collapse:collapse}
+  .days th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:4px 4px}
+  .days td{padding:3px 4px;vertical-align:top}
+  .days .in{min-height:34px;padding:5px 8px;font-size:13px}
+  .days td.d{white-space:nowrap;font-weight:600;font-size:13px;padding-top:9px}
+  .lines .note{display:flex;gap:10px;align-items:center}
+  .rooms{display:grid;grid-template-columns:repeat(4,1fr);gap:0 10px}
+  .bk{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 10px;background:#fff}
+  .bk.gone{opacity:.6}
+  .bk .top2{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .bk .top2 b{font-size:15px}
+  .bk .top2 .sp{flex:1}
+  .bk .money{font-size:12.5px;color:var(--ink-2);margin-top:4px}
+  .prog{display:flex;gap:3px;flex-wrap:wrap;margin:6px 0}
+  .prog button{border:1px solid var(--line);background:#fff;border-radius:8px;min-width:40px;min-height:32px;font-size:12.5px;font-weight:700;cursor:pointer}
+  .prog button.on{background:var(--jor);border-color:var(--jor);color:#fff}
+  .short{font-size:13px}
+  .short b{color:var(--err)}
+  .chart{width:100%;height:160px}
+  .iss{cursor:pointer}
+  table.gst tr.chk td{background:#FFF59D}
+  table.gsf .in{min-width:70px}
+  table.gsf td{padding:3px 4px}
+  .paper.green{background:#CCF5CC;-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:8mm;font-family:"Comic Sans MS","Segoe UI",sans-serif}
+  .gs-title{text-align:center;font-size:18pt;font-weight:700;margin:0 0 4mm}
+  .gs-head{border-collapse:collapse;margin:0 0 3mm;font-size:10.5pt}
+  .gs-head th{text-align:left;font-weight:400;padding:2px 8px;border:1px solid #333;width:30mm}
+  .gs-head td{border:1px solid #333;padding:2px 8px;min-width:80mm}
+  .gs-grid{width:100%;border-collapse:collapse;font-size:10pt}
+  .gs-grid th,.gs-grid td{border:1px solid #333;padding:3px 5px;text-align:left}
+  .gs-grid td.c{text-align:center}
+  .gs-grid tr.chk td{background:#FFF176}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div><h2 class="ph">Reservations</h2><p class="sub">Requests from the account managers, the pink sheet, options and cancellations — and what they would cost.</p></div>
+    <div class="sp"></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"><div class="empty">Loading…</div></div>
+</div>
+<div id="side" class="side hidden"></div>
+
+<script src="../core/config.js"></script>
+<script src="../core/brand.js"></script>
+<script src="../core/rules.js"></script>
+<script src="../core/dates.js"></script>
+<script src="../core/engine.js"></script>
+<script src="../core/api.js"></script>
+<script src="../core/ui.js"></script>
+<script src="reservations.js"></script>
+</body>
+</html>

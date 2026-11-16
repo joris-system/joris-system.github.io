@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#00A66E">
+<title>JOR Ireland — tell us what went wrong</title>
+<link rel="icon" href="../core/icon-192.png">
+<link rel="stylesheet" href="../core/style.css">
+<style>
+  body{background:linear-gradient(160deg,#E8F3EE 0%,#F5FAF8 60%)}
+  .cf{max-width:620px;margin:0 auto;padding:18px 16px 60px}
+  .cf-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 16px;background:var(--jor);border-radius:16px;padding:10px 14px;box-shadow:var(--shadow)}
+  .cf-top img{height:42px;width:auto}
+  .lang{display:flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;background:#fff}
+  .lang button{border:0;background:none;padding:7px 14px;font:700 13px var(--sans);color:var(--ink-2);cursor:pointer}
+  .lang button.on{background:var(--jor);color:#fff}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:22px 20px}
+  h1{font-family:var(--serif);font-size:27px;line-height:1.15;margin:0 0 8px;color:var(--ink)}
+  .lead{font-size:15px;color:var(--ink-2);margin:0 0 18px;line-height:1.5}
+  .grp{display:inline-flex;align-items:center;gap:8px;background:var(--mist-2);border:1px solid var(--mist);color:var(--jor-dark);border-radius:99px;padding:6px 14px;font-weight:700;font-size:14px;margin:0 0 16px}
+  .who{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}
+  .who label{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;font-size:14px;cursor:pointer;background:#fff}
+  .who label:has(input:checked){border-color:var(--jor);background:var(--mist-3);font-weight:600}
+  .who input{accent-color:var(--jor)}
+  .f{margin:0 0 14px}
+  .f span{font-size:13px}
+  textarea.in{min-height:120px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hp{position:absolute;left:-5000px;width:1px;height:1px;overflow:hidden}
+  .send{width:100%;padding:14px;font-size:16px;margin-top:6px}
+  .small{font-size:12.5px;color:var(--ink-3);margin:12px 2px 0;line-height:1.5}
+  .now{background:var(--warn-bg);border:1px solid #f1dcae;color:var(--warn);border-radius:12px;padding:10px 12px;font-size:13.5px;margin:0 0 16px}
+  .done{text-align:center;padding:26px 8px 10px}
+  .done .tick{width:64px;height:64px;border-radius:50%;background:var(--jor);color:#fff;display:grid;place-items:center;margin:0 auto 14px;font-size:34px}
+  .done .num{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--jor-dark);margin:6px 0 10px;letter-spacing:.02em}
+  .err{color:var(--err);font-size:14px;margin-top:10px;min-height:1em}
+  @media (max-width:480px){.who,.row2{grid-template-columns:1fr}h1{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="cf">
+  <div class="cf-top"><img data-logo alt="JOR Ireland"><div class="lang"><button data-lang="en">EN</button><button data-lang="fr">FR</button></div></div>
+  <div class="card" id="card">
+    <form id="form" autocomplete="on" novalidate>
+      <h1 data-t="title"></h1>
+      <p class="lead" data-t="lead"></p>
+      <div class="grp hidden" id="grp"></div>
+      <div class="now" data-t="now"></div>
+      <div class="f"><span data-t="who"></span></div>
+      <div class="who" id="who"></div>
+      <label class="f hidden" id="refbox"><span data-t="ref"></span><input class="in" name="ref" placeholder="27/1274" autocomplete="off"></label>
+      <label class="f"><span data-t="group"></span><input class="in" name="groupName" autocomplete="off"></label>
+      <div class="row2">
+        <label class="f"><span data-t="when"></span><input class="in" type="date" name="travelDate"></label>
+        <label class="f"><span data-t="where"></span><input class="in" name="where" data-ph="whereph"></label>
+      </div>
+      <label class="f"><span data-t="what"></span><textarea class="in" name="what" data-ph="whatph"></textarea></label>
+      <label class="f"><span data-t="wish"></span><textarea class="in" name="wish" style="min-height:70px"></textarea></label>
+      <div class="row2">
+        <label class="f"><span data-t="name"></span><input class="in" name="name" autocomplete="name"></label>
+        <label class="f"><span data-t="contact"></span><input class="in" name="contact" autocomplete="email"></label>
+      </div>
+      <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+      <button class="btn p send" id="send" type="submit" data-t="send"></button>
+      <div class="err" id="err"></div>
+      <p class="small" data-t="privacy"></p>
+    </form>
+  </div>
+</div>
+<script src="../core/config.js"></script>
+<script src="../core/brand.js"></script>
+<script src="complaint.js"></script>
+</body>
+</html>

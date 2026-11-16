@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#00A66E">
+<title>Suppliers &amp; rates — JORIS</title>
+<link rel="icon" href="../core/icon-192.png">
+<link rel="stylesheet" href="../core/style.css">
+<style>
+  .tiers td{padding:3px 4px}
+  .tiers .in{min-height:34px;padding:5px 8px}
+  .mailbox{font-family:Consolas,monospace;font-size:12.5px;white-space:pre-wrap;background:var(--mist-3);border:1px solid var(--line);border-radius:10px;padding:10px;max-height:180px;overflow:auto}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div><h2 class="ph">Suppliers &amp; rates</h2><p class="sub">Hotels, visits, restaurants, coaches and guides — their cancellation terms, and their rates by year, dated when they came in.</p></div>
+    <div class="sp"></div>
+    <button class="btn p hidden" id="add"></button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"><div class="empty">Loading…</div></div>
+</div>
+<div id="side" class="side hidden"></div>
+
+<script src="../core/config.js"></script>
+<script src="../core/brand.js"></script>
+<script src="../core/rules.js"></script>
+<script src="../core/dates.js"></script>
+<script src="../core/engine.js"></script>
+<script src="../core/api.js"></script>
+<script src="../core/ui.js"></script>
+<script src="rates.js"></script>
+</body>
+</html>

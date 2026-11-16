@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#00A66E">
+<title>Complaints — JORIS</title>
+<link rel="icon" href="../core/icon-192.png">
+<link rel="stylesheet" href="../core/style.css">
+<style>
+  .cbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chips button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 14px;font:600 13px var(--sans);color:var(--ink-2);cursor:pointer}
+  .chips button.on{background:var(--jor);border-color:var(--jor);color:#fff}
+  .chips b{margin-left:4px}
+  .cbar .sp{flex:1}
+  .cbar input.in{max-width:240px}
+  tr.clk{cursor:pointer}
+  tr.clk:hover td{background:var(--mist-3)}
+  .what{max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill.new{background:var(--err-bg);color:var(--err)}
+  .pill.acknowledged{background:var(--warn-bg);color:var(--warn)}
+  .pill.resolved{background:var(--mist-2);color:var(--jor-dark)}
+  .cdet .kv{margin:0 0 10px}
+  .cdet blockquote{margin:0 0 12px;padding:10px 14px;border-left:4px solid var(--jor);background:var(--mist-3);border-radius:0 10px 10px 0;white-space:pre-wrap}
+  .qrs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .qrbox{border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+  .qrbox svg{width:180px;height:180px;display:block;margin:6px auto}
+  .qrbox code{font-size:11.5px;word-break:break-all;color:var(--ink-3)}
+  /* The printed card: one per group, in English and French */
+  .qcard{width:170mm;margin:0 auto;border:1.5px solid #00A66E;border-radius:6mm;padding:12mm;text-align:center;font-family:var(--sans);color:#13251E}
+  .qcard img{height:16mm}
+  .qcard h2{font-family:var(--serif);font-size:20pt;margin:6mm 0 1mm}
+  .qcard h3{font-family:var(--serif);font-size:15pt;font-weight:600;color:#41564D;margin:0 0 5mm}
+  .qcard svg{width:70mm;height:70mm;display:block;margin:0 auto}
+  .qcard .ref{font-size:14pt;font-weight:700;margin:4mm 0 2mm}
+  .qcard p{font-size:10.5pt;margin:2mm 0;color:#41564D}
+  @media (max-width:760px){.qrs{grid-template-columns:1fr}.what{max-width:200px}.cbar input.in{max-width:none;flex:1}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div><h2 class="ph">Complaints</h2><p class="sub">From the complaint form and its QR codes, and the ones that come by phone or email — until each is put right.</p></div>
+  </div>
+  <div class="cbar">
+    <div class="chips" id="chips"></div><span class="sp"></span>
+    <input class="in" id="q" placeholder="Search: number, reference, name, words…">
+    <button class="btn" id="qr"></button><button class="btn" id="xl"></button><button class="btn p" id="add"></button>
+  </div>
+  <div id="view"><div class="empty">Loading…</div></div>
+</div>
+
+<script src="../core/config.js"></script>
+<script src="../core/brand.js"></script>
+<script src="../core/rules.js"></script>
+<script src="../core/dates.js"></script>
+<script src="../core/sheet.js"></script>
+<script src="../core/qrcode.js"></script>
+<script src="../core/api.js"></script>
+<script src="../core/ui.js"></script>
+<script src="complaints.js"></script>
+</body>
+</html>

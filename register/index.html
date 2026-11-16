@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#00A66E">
+<title>RFP register — JORIS</title>
+<link rel="icon" href="../core/icon-192.png">
+<link rel="stylesheet" href="../core/style.css">
+<style>
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
+  .bar .in{width:auto;min-width:150px}
+  .bar .srch{flex:1;min-width:220px}
+  .count{color:var(--ink-3);font-size:13px;margin:0 0 8px}
+  .head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .head .sp{flex:1}
+  .agent b{display:block}
+  .chart{width:100%;height:150px}
+  .chart text{font-size:10px;fill:var(--ink-3)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:900px){.two{grid-template-columns:1fr}}
+  .hint{font-size:12.5px;padding:8px 10px;border-radius:9px;background:var(--mist-3);border:1px solid var(--line-2);margin:-4px 0 12px}
+  .hint.new{background:var(--gold-pale);border-color:#e6d7aa}
+  .acts{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px}
+  .chkrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-2)}
+  .chkrow input{width:19px;height:19px;accent-color:var(--jor)}
+  .chkrow .mini{margin-left:auto}
+  .chkrow.st{gap:8px}
+  .chkrow .sn{width:22px;text-align:right;font-weight:800;color:var(--ink-3);font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .chkrow.sub{padding-left:30px;font-size:13px}
+  .chkrow.sub .sn{display:none}
+  .chkrow .tx{min-width:0}
+  .chkrow .sd{font-size:10px;font-weight:800;letter-spacing:.06em;border-radius:5px;padding:1px 5px;flex:0 0 auto}
+  .chkrow .sd.am{background:var(--blue-bg);color:var(--blue)}
+  .chkrow .sd.om{background:var(--warn-bg);color:var(--warn)}
+  .chkrow.sub2{padding-left:52px;font-size:13px}
+  .chkrow.sub2 .sn{display:none}
+  .chkrow.notes{align-items:flex-start}
+  .chkrow .nt{white-space:pre-wrap;font-size:13px;color:var(--ink-2);margin-top:3px}
+  .chkrow .help{font-size:11px;font-weight:700;color:var(--blue);border-bottom:1px dotted var(--blue);cursor:help;margin-left:4px}
+  .chkrow .btn{flex:0 0 auto}
+  .kv.imp{grid-template-columns:minmax(0,1fr)}
+  table.golf .in{min-width:90px}
+  .sticker{border:1.5px solid #13251E;padding:6mm 7mm;margin:0 0 4mm}
+  .sticker h2{text-align:center;font:800 17pt Arial,Helvetica,sans-serif;margin:0 0 4mm;letter-spacing:.02em}
+  .sticker .stk{display:grid;grid-template-columns:1.25fr 1fr;gap:6mm}
+  .sticker table{width:100%;border-collapse:collapse;font:11pt Arial,Helvetica,sans-serif}
+  .sticker th{text-align:left;font-weight:400;white-space:nowrap;width:30%;padding:2px 4px 2px 0;vertical-align:bottom}
+  .sticker td{border-bottom:1px solid #444;padding:2px 4px;height:7mm;vertical-align:bottom}
+  .ssimp{display:grid;grid-template-columns:34% 1fr;gap:2px 10px;margin-top:4px}
+  .ssimp > div{display:contents}
+  .ssimp span{font-weight:700}
+  table.golfp{margin-top:4px;font-size:9pt}
+  table.golfp td{border:1px solid #bbb;padding:2px 4px}
+  .stepbar{height:6px;background:var(--mist-3);border-radius:3px;overflow:hidden;margin:2px 0 6px}
+  .stepbar i{display:block;height:100%;background:var(--jor)}
+  .ssheet table{width:100%;border-collapse:collapse;font-size:10pt}
+  .ssheet th,.ssheet td{border:1px solid #9aa;padding:4px 6px;vertical-align:top;text-align:left}
+  .ssheet .c{text-align:center}
+  .ssheet .sshead th{width:14%;background:#eef5f1}
+  .ssnote{border:1px solid #9aa;border-top:0;padding:8px;min-height:24mm;font-size:10pt}
+  .done-ref{font-family:var(--serif);font-size:40px;font-weight:700;color:var(--jor-dark);text-align:center;margin:6px 0}
+  .folder{display:flex;gap:8px;align-items:center;justify-content:center;font-family:Consolas,monospace;background:var(--mist-3);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 0 12px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div><h2 class="ph">RFP register</h2><p class="sub">Every request for a price, from the moment it comes in.</p></div>
+    <div class="sp"></div>
+    <button class="btn p hidden" id="new"></button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"><div class="empty">Loading…</div></div>
+</div>
+<div id="side" class="side hidden"></div>
+
+<script src="../core/config.js"></script>
+<script src="../core/brand.js"></script>
+<script src="../core/rules.js"></script>
+<script src="../core/dates.js"></script>
+<script src="../core/api.js"></script>
+<script src="../core/ui.js"></script>
+<script src="register.js"></script>
+</body>
+</html>

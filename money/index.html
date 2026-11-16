@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#00A66E">
+<title>Money — JORIS</title>
+<link rel="icon" href="../core/icon-192.png">
+<link rel="stylesheet" href="../core/style.css">
+<style>
+  .pay{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 10px;background:#fff}
+  .pay .top2{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .pay .top2 b{font-size:15px}
+  .pay .top2 .sp{flex:1}
+  .exp{font-size:12.5px;background:var(--mist-3);border:1px solid var(--line-2);border-radius:8px;padding:6px 9px;margin-top:6px}
+  td.ticks{white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div><h2 class="ph">Money</h2><p class="sub">Deposits and final payments from the clients, the suppliers’ bills, and what is still owed on each file.</p></div>
+    <div class="sp"></div>
+    <button class="btn p hidden" id="newbill"></button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"><div class="empty">Loading…</div></div>
+</div>
+<div id="side" class="side hidden"></div>
+
+<script src="../core/config.js"></script>
+<script src="../core/brand.js"></script>
+<script src="../core/rules.js"></script>
+<script src="../core/dates.js"></script>
+<script src="../core/engine.js"></script>
+<script src="../core/api.js"></script>
+<script src="../core/ui.js"></script>
+<script src="money.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#00A66E">
+<title>JORIS</title>
+<link rel="icon" href="core/icon-192.png">
+<link rel="stylesheet" href="core/style.css">
+<style>
+  .home{max-width:980px;margin:0 auto;padding:22px 18px 60px}
+  .hello h1{font-family:var(--serif);font-size:28px;margin:6px 0 2px}
+  .parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-top:18px}
+  .part.soon{opacity:.6;box-shadow:none}
+  .acct{margin-top:26px;display:flex;gap:8px;flex-wrap:wrap}
+  .todohead{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:22px 0 10px}
+  .todohead h2,.ph2{font-family:var(--serif);font-size:21px;margin:0}
+  .ph2{margin:28px 0 0}
+  .todohead .sp{flex:1}
+  .grp{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:14px 2px 6px}
+  .ti .btn{margin-left:6px}
+</style>
+</head>
+<body>
+<div class="gate hidden" id="gate">
+  <div class="gatecard">
+    <img data-logo alt="JOR Ireland">
+    <div id="signin">
+      <h1>JORIS</h1>
+      <p class="mini" style="margin:-6px 0 10px;letter-spacing:.04em">Joe O’Reilly Integrated System</p>
+      <p>Sign in with your work email.</p>
+      <label class="f"><span>Email</span><input class="in" id="email" type="email" autocomplete="username" spellcheck="false"></label>
+      <label class="f"><span>Password</span><input class="in" id="pw" type="password" autocomplete="current-password"></label>
+      <label class="chk"><input type="checkbox" id="keep"> Keep me signed in on this computer</label>
+      <button class="btn p" id="go">Sign in</button>
+      <div class="err" id="err"></div>
+      <p class="mini">New, or been given a starting code? Put it in as your password.</p>
+    </div>
+    <div id="codestep" class="hidden">
+      <h1>A new computer</h1>
+      <p id="codehi"></p>
+      <label class="f"><span>The six-digit code</span><input class="in" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false"></label>
+      <label class="chk"><input type="checkbox" id="remember" checked> This is my own computer or phone — remember it</label>
+      <p class="mini" style="margin:-4px 0 12px">Untick on a shared or borrowed computer, and it asks again next time.</p>
+      <button class="btn p" id="go3">Sign in</button>
+      <div class="err" id="err3"></div>
+      <p class="mini">No email? It can take a minute. An admin can also give you a starting code.</p>
+    </div>
+    <div id="choose" class="hidden">
+      <h1>Choose your password</h1>
+      <p id="hi"></p>
+      <label class="f"><span>New password</span><input class="in" id="pw1" type="password" autocomplete="new-password"><em>At least 10 characters. A short sentence is easiest to remember.</em></label>
+      <label class="f"><span>The same again</span><input class="in" id="pw2" type="password" autocomplete="new-password"></label>
+      <button class="btn p" id="go2">Save and sign in</button>
+      <div class="err" id="err2"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="home">
+    <div class="hello"><h1 id="hello"></h1><div class="mini" id="role"></div></div>
+    <div id="cover"></div>
+    <div class="todohead"><h2>My things to do</h2><span class="sp"></span><button class="btn sm hidden" id="give"></button><button class="btn sm" id="off"></button></div>
+    <div id="todo"><div class="empty">Working it out…</div></div>
+    <div id="team"></div>
+    <h2 class="ph2">Every part</h2>
+    <div class="parts" id="parts"></div>
+    <div class="acct">
+      <button class="btn" id="chpw"></button>
+      <button class="btn" id="devs"></button>
+      <button class="btn" id="everywhere"></button>
+    </div>
+  </div>
+</div>
+
+<script src="core/config.js"></script>
+<script src="core/brand.js"></script>
+<script src="core/rules.js"></script>
+<script src="core/dates.js"></script>
+<script src="core/engine.js"></script>
+<script src="core/api.js"></script>
+<script src="core/ui.js"></script>
+<script src="home.js"></script>
+</body>
+</html>
