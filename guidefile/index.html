@@ -9,11 +9,11 @@
 <meta name="theme-color" content="#00A66E">
 <title>Guide files — JORIS</title>
 <link rel="icon" href="../core/icon-192.png">
-<link rel="stylesheet" href="../core/style.css?v=92f52502">
+<link rel="stylesheet" href="../core/style.css?v=22a90e1e">
 <style>
   .wrap{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px}
   @media(max-width:1000px){.wrap{grid-template-columns:1fr}}
-  .gside{padding:12px;align-self:start;position:sticky;top:70px;max-height:calc(100vh - 90px);overflow:auto}
+  .gside{padding:12px;align-self:start;position:sticky;top:calc(70px + var(--look,0px));max-height:calc(100vh - 90px - var(--look,0px));overflow:auto}
   @media(max-width:1000px){.gside{position:static;max-height:none}}
   .gl{display:flex;flex-direction:column;gap:6px}
   .gi{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 11px;cursor:pointer}
@@ -62,11 +62,11 @@
 
 <script src="../core/config.js?v=77767e31"></script>
 <script src="../core/brand.js?v=805730c9"></script>
-<script src="../core/rules.js?v=c26fbf8b"></script>
+<script src="../core/rules.js?v=6104589c"></script>
 <script src="../core/dates.js?v=9f278441"></script>
 <script src="../core/qrcode.js?v=accc1969"></script>
-<script src="../core/api.js?v=3e50a29c"></script>
-<script src="../core/ui.js?v=163563ee"></script>
+<script src="../core/api.js?v=89f10f1a"></script>
+<script src="../core/ui.js?v=85907018"></script>
 <script src="guidefile.js?v=b3238d33"></script>
 </body>
 </html>

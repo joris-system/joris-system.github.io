@@ -67,8 +67,14 @@ label.chk input{width:18px;height:18px;accent-color:var(--jor)}
 .gatecard .btn.p{width:100%;margin-top:8px;font-size:15px;min-height:44px}
 
 /* Top bar */
-.top{position:sticky;top:0;z-index:30;background:var(--jor);color:#fff;padding:9px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 10px rgba(3,40,26,.18)}
+.top{position:sticky;top:var(--look,0px);z-index:30;background:var(--jor);color:#fff;padding:9px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 10px rgba(3,40,26,.18)}
 .top img{height:30px;filter:brightness(0) invert(1)}
+/* Seeing JORIS as a colleague: said across the very top of every page, above the bar. */
+.looking{position:sticky;top:0;z-index:31;background:var(--on-jor);color:#3d3000;padding:7px 18px;display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.35}
+.looking span{flex:1;min-width:0}
+.looking .i{flex:none}
+.looking .btn{background:#fff;border-color:rgba(61,48,0,.25);color:#3d3000;min-height:32px;padding:4px 12px;white-space:nowrap}
+@media(max-width:700px){.looking{padding:7px 12px}}
 .top .tt{min-width:0}
 .top .tt b{display:block;font-size:16px;font-family:var(--serif);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .tt span{display:block;font-size:12px;opacity:.85}

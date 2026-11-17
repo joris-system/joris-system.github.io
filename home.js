@@ -122,6 +122,8 @@
     $('#devs').innerHTML = I('lock', 'sm') + 'My computers and phones';
     $('#off').innerHTML = I('cal', 'sm') + 'I’m off — who covers?';
     if (me.perms['tasks.give']) { $('#give').classList.remove('hidden'); $('#give').innerHTML = I('plus', 'sm') + 'Give someone a task'; }
+    $('#seeas').classList.toggle('hidden', !me.perms['people.viewas']);
+    $('#seeas').innerHTML = I('eye', 'sm') + 'See JORIS as someone on the team';
     /* The lists are asked for together, not one after another; what this tab last saw shows meanwhile. */
     const seenPeople = JOR.last('settings.get');
     if (seenPeople) people = seenPeople.people || [];
@@ -252,6 +254,26 @@
           'Codes for new computers are switched off in Settings.') + '</p>',
       on: (el, close) => el.querySelectorAll('[data-forget]').forEach(b => b.addEventListener('click', async () => {
         try { await JOR.call('auth.forget', { id: b.dataset.forget }); b.closest('tr').remove(); UI.toast('Forgotten — it asks for a code next time.'); } catch (e) { UI.toast(e.message, 5000); }
+      }))
+    });
+  });
+
+  /* Management: JORIS as a colleague sees it — their role, their own files, their list. To look, never to change. */
+  $('#seeas').addEventListener('click', async () => {
+    let r;
+    try { r = await JOR.call('view.who'); } catch (e) { UI.toast(e.message, 5000); return; }
+    const by = {};
+    r.people.forEach(p => { (by[p.role] = by[p.role] || []).push(p); });
+    UI.dialog({
+      title: 'See JORIS as someone on the team',
+      body: '<p class="mini" style="margin-top:0">You see what they see: their parts of JORIS, their own files, their list of things to do. It is for looking only: nothing you do while looking is saved, and their own login is not touched. The log notes that you looked.</p>' +
+        (r.people.length ? Object.keys(RU.ROLES).filter(k => by[k]).map(k => '<h3 style="margin:12px 0 6px">' + esc(RU.ROLES[k]) + '</h3><div class="acts" style="justify-content:flex-start;flex-wrap:wrap">' +
+          by[k].sort((a, b) => a.name.localeCompare(b.name)).map(p => '<button class="btn sm" data-as="' + esc(p.id) + '">' + esc(p.name) + '</button>').join('') + '</div>').join('')
+          : '<p class="mini">Nobody to look as yet. Add the team in People &amp; settings first.</p>') + '<div class="err" data-err></div>',
+      foot: '<button class="btn" data-x>Cancel</button>',
+      on: el => el.querySelectorAll('[data-as]').forEach(b => b.addEventListener('click', async () => {
+        el.querySelectorAll('[data-as]').forEach(x => { x.disabled = true; });
+        try { await JOR.look(b.dataset.as); } catch (e) { el.querySelectorAll('[data-as]').forEach(x => { x.disabled = false; }); el.querySelector('[data-err]').textContent = e.message; }
       }))
     });
   });

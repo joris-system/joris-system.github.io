@@ -103,6 +103,7 @@ window.UI = (function () {
         '<div class="who"><span class="nm">' + esc(me.name) + '</span><span class="av" title="' + esc(me.name + ' · ' + (RU.ROLES[me.role] || me.role)) + '">' + esc(me.initials || '?') + '</span>' +
         '<button class="btn" data-signout title="Sign out">' + icon('out', 'sm') + '</button></div>' : '');
     document.body.prepend(el);
+    if (me && me.viewer) looking(me);
     el.querySelectorAll('img[data-logo]').forEach(i => { i.src = window.JOR_MARKS.logo; });
     const pm = el.querySelector('[data-parts]');
     if (pm) pm.addEventListener('click', () => partsMenu(me));
@@ -113,6 +114,20 @@ window.UI = (function () {
     });
     if (me) askJoris(me);
     return el;
+  }
+
+  /* Seeing JORIS as a colleague: a line across the very top of every page says so, with the way back. */
+  function looking(me) {
+    const lk = document.createElement('div');
+    lk.className = 'looking';
+    lk.innerHTML = icon('eye', 'sm') + '<span>You are seeing JORIS as <b>' + esc(me.name) + '</b>, ' + esc(RU.ROLES[me.role] || me.role) + '. Nothing you do here is saved.</span><button class="btn sm" data-back>Back to me</button>';
+    document.body.prepend(lk);
+    const fit = () => document.documentElement.style.setProperty('--look', lk.offsetHeight + 'px');
+    fit(); window.addEventListener('resize', fit);
+    lk.querySelector('[data-back]').addEventListener('click', async e => {
+      e.target.disabled = true;
+      try { await JOR.look(''); } catch (x) { e.target.disabled = false; toast(x.message, 5000); }
+    });
   }
 
   /* ── Ask JORIS: how to use JORIS, on every page ──────────────────────────

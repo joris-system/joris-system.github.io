@@ -38,6 +38,9 @@
     'register.dashboard': { management: 1 },
     'audit.view':         { management: 1 },
     'people.manage':      'admin',
+    /* Seeing JORIS as someone on the team sees it — to look, never to change (Dave, 17 Nov).
+       Management only: every other role sees less than management does, so nothing new is shown. */
+    'people.viewas':      { management: 1 },
     'numbers.manage':     'admin',
     /* Reservations: the accommodation request, the pink sheet, cancellations. */
     'res.view':           { management: 1, account: 1, reservations: 1, operations: 1 },

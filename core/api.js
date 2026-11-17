@@ -42,7 +42,7 @@ window.JOR = (function () {
   function keepMe(m) {
     try { (kept() ? localStorage : sessionStorage).setItem(MK, JSON.stringify({ k: tail(), at: Date.now(), me: m })); } catch (e) { }
   }
-  const sig = m => JSON.stringify([m.id, m.name, m.role, m.team, m.admin, m.finance, m.owner, m.status, m.perms, m.covers]);
+  const sig = m => JSON.stringify([m.id, m.name, m.role, m.team, m.admin, m.finance, m.owner, m.status, m.perms, m.covers, m.viewer ? m.viewer.id : '']);
 
   /* What this tab last saw of a list, kept until the tab closes or the
      person signs out (half an hour at most). */
@@ -124,7 +124,7 @@ window.JOR = (function () {
       try {
         res = await fetch(cfg.server, {
           method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(Object.assign({ a: a, t: token() }, extra || {}))
+          body: JSON.stringify(Object.assign({ a: a, t: token() }, lookTag(), extra || {}))
         });
       } catch (e) { const err = new Error('No connection to the JOR server just now. Try again in a moment.'); err.offline = true; throw err; }
       if (!res.ok) { const err = new Error('The JOR server answered ' + res.status + '. Try again in a moment.'); err.offline = true; throw err; }
@@ -134,11 +134,27 @@ window.JOR = (function () {
     if (!j.ok) {
       const msg = String(j.error || 'Something went wrong');
       if (/^signin:/.test(msg) && !(opts && opts.quiet)) { toSignIn(msg.slice(7)); throw new Error(msg.slice(7)); }
+      /* This page was drawn while seeing JORIS as someone else, and that has ended (or moved on): drawn again as whoever it is now. */
+      if (/^look:/.test(msg)) { forgetMe(); location.reload(); throw new Error(msg.slice(5)); }
       const err = new Error(msg.replace(/^(signin|stale):/, ''));
       err.stale = /^stale:/.test(msg); err.signin = /^signin:/.test(msg);
       throw err;
     }
     return j;
+  }
+
+  /* ── Seeing JORIS as someone on the team ─────────────────────────────
+     Management can look at JORIS as a colleague sees it. The server does the
+     seeing — every answer is worked out as that person, and nothing can be
+     changed meanwhile. A page drawn that way says so with each request, so a
+     click made after the look has ended can't land as the person themselves.
+     What this tab had seen belongs to the other view, so it is forgotten. */
+  function lookTag() { const k = meKept(); return k && k.me.viewer ? { as: k.me.id } : {}; }
+  function forgetMe() { forget(); try { sessionStorage.removeItem(MK); localStorage.removeItem(MK); } catch (e) { } }
+  async function look(id) {
+    const r = await call(id ? 'view.as' : 'view.stop', id ? { id: id } : {});
+    forget(); keepMe(r.me);
+    location.href = ROOT;
   }
 
   /* Who is signed in — or off to the sign-in page. */
@@ -153,5 +169,5 @@ window.JOR = (function () {
   }
 
   return { call: call, me: me, token: token, setToken: setToken, clearToken: clearToken, kept: kept, toSignIn: toSignIn, device: device, deviceLabel: deviceLabel, ROOT: ROOT, cfg: cfg,
-    meKept: meKept, keepMe: keepMe, last: last, keep: keep, live: live };
+    meKept: meKept, keepMe: keepMe, last: last, keep: keep, live: live, look: look };
 })();
