@@ -241,5 +241,5 @@ window.JOR = (function () {
   }
 
   return { call: call, me: me, token: token, setToken: setToken, clearToken: clearToken, kept: kept, toSignIn: toSignIn, device: device, deviceLabel: deviceLabel, ROOT: ROOT, cfg: cfg,
-    meKept: meKept, keepMe: keepMe, last: last, keep: keep, live: live, look: look, warm: warm, back: back, seen: seen, door: DOOR };
+    meKept: meKept, keepMe: keepMe, last: last, keep: keep, forget: forget, live: live, look: look, warm: warm, back: back, seen: seen, door: DOOR };
 })();

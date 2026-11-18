@@ -298,42 +298,120 @@
      Each read here, the right tabs sent; the server says what will come in
      — by season, the initials to match to people, the deposits, what can't
      be placed — and nothing is written until "Bring them in". */
-  const hist = { rfp: null, ops: null, quotes: null, names: {}, who: {}, r: null };
+  const hist = { rfp: null, ops: null, quotes: null, names: {}, who: {}, r: null, note: '', ppl: null };
   const HK = window.JOR_HISTORY;
   /* Only the tabs that matter, each row in its place (row numbers stay right) but with its empty cells cut off. */
   const slim = (tabs, kind) => tabs.filter(t => kind === 'rfp' ? /quote live board|^follow ?up|^confirmed\s*\d{4}|^cancell?ed\s*\d{4}/i.test(String(t.name).trim()) : kind === 'quotes' ? !/summary/i.test(String(t.name)) : /^\d{4}$/.test(String(t.name).trim()))
     .map(t => ({ name: t.name, rows: t.rows.map(r => { const x = (r || []).slice(); while (x.length && (x[x.length - 1] === '' || x[x.length - 1] === null || x[x.length - 1] === undefined)) x.pop(); return x; }) }));
+  /* ══ A file chosen on either screen goes where it belongs ═══════════
+     JOR's own workbooks — the RFP window, the OPS file, the quotes window — are known by their tabs and come in on
+     "JOR's history". Anything else is a plain table and comes in on "Bring in a spreadsheet", read as what its
+     headings say it is. So it doesn't matter which of the two screens a file is put into, or which box. */
+  const hkey = s => String(s === undefined || s === null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const blank = c => String(c === undefined || c === null ? '' : c).trim() === '';
+  const filled = r => (r || []).filter(c => !blank(c)).length;
+  /* A tab as a plain table: its rows with something in them, from the heading row down. A title line or two above
+     the headings (one cell filled, the headings three or more) is passed over. */
+  function table(rows) {
+    const t = (rows || []).filter(r => r && filled(r));
+    let at = 0;
+    if (t.length && filled(t[0]) < 2) for (let i = 1; i < Math.min(t.length, 12); i++) if (filled(t[i]) >= 3) { at = i; break; }
+    return t.slice(at);
+  }
+  /* What a plain table is, by its headings: the first of these with a heading from each of its two lists. */
+  const LOOKS = [
+    ['contacts', ['email', 'emailaddress'], ['company', 'companyname', 'organisation', 'organization', 'consent', 'marketing', 'optin', 'subscribed', 'marketingemails', 'marketingcontactstatus', 'unsubscribed', 'unsubscribedfromallemail']],
+    ['people', ['email', 'emailaddress', 'workemail'], ['role', 'jobtitle', 'title', 'position', 'job', 'team', 'department', 'dept', 'initials']],
+    ['files', ['ref', 'reference', 'refno', 'ourref', 'jorref', 'fileno', 'filenumber', 'quoteno'], ['agent', 'client', 'agency', 'touroperator', 'arrival', 'arrivaldate', 'pax', 'status', 'accountmanager']],
+    ['rates', ['supplier', 'hotel', 'venue', 'visit', 'attraction', 'name'], ['amount', 'price', 'cost', 'netrate', 'net', 'adult', 'adultrate', 'rate']],
+    ['suppliers', ['name', 'supplier', 'hotel', 'venue'], ['town', 'city', 'location', 'county', 'star', 'stars', 'rating']]
+  ];
+  function looksLike(tabs) {
+    for (let i = 0; i < tabs.length; i++) {
+      const head = (table(tabs[i].rows)[0] || []).map(hkey);
+      const hit = LOOKS.filter(L => L[1].some(h => head.indexOf(h) >= 0) && L[2].some(h => head.indexOf(h) >= 0))[0];
+      if (hit) return { kind: hit[0], tab: i };
+    }
+    for (let i = 0; i < tabs.length; i++) { try { if (HK.rateCard(tabs[i].rows || [])) return { kind: 'rates', tab: i }; } catch (e) { /* not the rates card */ } }
+    return null;
+  }
+  const OWN = { rfp: 'the RFP window', ops: 'the OPS file', quotes: 'the quotes window' };
+  const SAYS = { files: 'a list of RFPs', people: 'a staff list', suppliers: 'a list of suppliers', rates: 'a sheet of rates', contacts: 'a list of contacts' };
+  const andList = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+  function show(v) { view = v; history.replaceState(null, '', '#' + v); tabs(); (v === 'history' ? historyView : importer)(); }
+  async function takeFiles(chosen, from, box) {
+    const files = Array.from(chosen || []);
+    if (!files.length) return;
+    const own = [], plain = [];
+    try {
+      for (const f of files) {
+        $(box).innerHTML = '<div class="empty">Reading ' + esc(f.name) + '…</div>';
+        await new Promise(r => setTimeout(r, 30));                    // the words are on screen before the reading holds the page
+        const tabs = await SHEET.read(f), k = HK.kind(tabs);
+        (k ? own : plain).push({ kind: k, tabs: tabs, name: f.name });
+      }
+    } catch (x) { $(box).innerHTML = '<div class="errbox">' + esc(x.message) + '</div>'; return; }
+    /* JOR's own workbooks: to JOR's history, whichever screen they were chosen on. */
+    if (own.length) {
+      if (!me.perms['history.import']) { $(box).innerHTML = '<div class="errbox">' + esc(own[0].name) + ' is ' + OWN[own[0].kind] + '. JOR’s own workbooks are brought in by an admin, on “JOR’s history”.</div>'; return; }
+      const twice = own.filter((o, i) => own.findIndex(x => x.kind === o.kind) !== i);
+      own.forEach(o => { hist[o.kind] = slim(o.tabs, o.kind); hist.names[o.kind] = o.name; });
+      hist.r = null;
+      hist.note = [from === 'import' ? andList(own.map(o => '<b>' + esc(o.name) + '</b> is ' + OWN[o.kind])) + '. JOR’s own workbooks come in on this screen, so ' + (own.length === 1 ? 'it has' : 'they have') + ' been brought here.' : '',
+        twice.length ? 'Two of those are ' + OWN[twice[0].kind] + ' — one at a time: <b>' + esc(hist.names[twice[0].kind]) + '</b> is the one here.' : '',
+        plain.length ? andList(plain.map(p => '<b>' + esc(p.name) + '</b>')) + (plain.length === 1 ? ' isn’t one of the three, so it was left. Choose it' : ' aren’t any of the three, so they were left. Choose each') + ' on “Bring in a spreadsheet”.' : ''].filter(Boolean).join(' ');
+      show('history'); historyPreview();
+      return;
+    }
+    /* A plain table: to "Bring in a spreadsheet", read as what its headings say. */
+    const p = plain[0], g = looksLike(p.tabs);
+    if (from === 'history' && !g) {
+      $(box).innerHTML = '<div class="errbox">' + esc(p.name) + ' isn’t the RFP window, the OPS file or the quotes window — none of them has the tabs they keep. A staff list, a list of suppliers, rates or contacts comes in on “Bring in a spreadsheet”.</div>';
+      return;
+    }
+    imp.tabs = p.tabs; imp.name = p.name; imp.tab = g ? g.tab : 0; imp.map = null;
+    const notes = [];
+    if (from === 'history') notes.push('<b>' + esc(p.name) + '</b> isn’t one of JOR’s three workbooks, so it has been brought here.');
+    if (g && g.kind !== imp.kind && (from === 'history' || !imp.chosen)) { imp.kind = g.kind; notes.push('It looks like ' + SAYS[g.kind] + ', so it is being read as one. If it isn’t, change “What is in it”.'); }
+    else if (g && g.kind !== imp.kind) notes.push('It looks more like ' + SAYS[g.kind] + ' than ' + SAYS[imp.kind] + '. If so, change “What is in it”.');
+    if (plain.length > 1) notes.push('One spreadsheet at a time here: ' + andList(plain.slice(1).map(x => '<b>' + esc(x.name) + '</b>')) + (plain.length === 2 ? ' wasn’t' : ' weren’t') + ' read.');
+    imp.note = notes.join(' ');
+    show('import');
+  }
   function historyView() {
     $('#view').innerHTML = '<div class="card pad"><h3>' + I('upload', 'sm') + 'The RFP window, the OPS file and the quotes window</h3>' +
       '<p class="mini" style="margin:0 0 12px">JOR’s own history, as it has been kept: every quote, every group, every season. Choose any of them — the preview says what will come in before anything is written. ' +
       'Old work is closed off as it comes in: a group already home is closed, and a quote whose travel dates have passed without a yes counts as lost. Bringing them in again later brings up to date whatever hasn’t been touched in JORIS since.</p>' +
-      '<div class="g3">' + UI.field('The RFP window', '<input class="in" type="file" id="hr" accept=".xlsx,.xlsm">', hist.names.rfp ? '✓ ' + esc(hist.names.rfp) : 'Quote Live Board, Follow up, Confirmed and Cancelled tabs.') +
-      UI.field('The OPS file', '<input class="in" type="file" id="ho" accept=".xlsx,.xlsm">', hist.names.ops ? '✓ ' + esc(hist.names.ops) : 'A tab for each season: 2024, 2025, 2026…') +
-      UI.field('The quotes window', '<input class="in" type="file" id="hq" accept=".xlsx,.xlsm">', hist.names.quotes ? '✓ ' + esc(hist.names.quotes) : 'Jess’s register: a tab for each month. One a year — bring each in.') + '</div><div id="hp"></div></div>';
-    ['hr', 'ho', 'hq'].forEach(id => $('#' + id).addEventListener('change', async e => {
-      const f = e.target.files[0];
-      if (!f) return;
-      $('#hp').innerHTML = '<div class="empty">Reading ' + esc(f.name) + '…</div>';
-      try {
-        const tabs = await SHEET.read(f), kind = HK.kind(tabs);
-        if (!kind) throw new Error(f.name + ' isn’t the RFP window, the OPS file or the quotes window — none of them has the tabs they keep.');
-        hist[kind] = slim(tabs, kind); hist.names[kind] = f.name; hist.r = null;
-        historyView(); historyPreview();
-      } catch (x) { $('#hp').innerHTML = '<div class="errbox">' + esc(x.message) + '</div>'; }
-    }));
+      '<div class="g3">' + UI.field('The RFP window', '<input class="in" type="file" id="hr" accept=".xlsx,.xlsm,.csv" multiple>', hist.names.rfp ? '✓ ' + esc(hist.names.rfp) : 'Quote Live Board, Follow up, Confirmed and Cancelled tabs.') +
+      UI.field('The OPS file', '<input class="in" type="file" id="ho" accept=".xlsx,.xlsm,.csv" multiple>', hist.names.ops ? '✓ ' + esc(hist.names.ops) : 'A tab for each season: 2024, 2025, 2026…') +
+      UI.field('The quotes window', '<input class="in" type="file" id="hq" accept=".xlsx,.xlsm,.csv" multiple>', hist.names.quotes ? '✓ ' + esc(hist.names.quotes) : 'Jess’s register: a tab for each month. One a year — bring each in.') + '</div><p class="mini" style="margin:8px 0 0">Any box takes any of the three — each is known by its tabs — and two or three can be chosen together.</p>' +
+      (hist.note ? '<div class="okbox" id="hn">' + hist.note + '</div>' : '') + '<div id="hp"></div></div>';
+    ['hr', 'ho', 'hq'].forEach(id => $('#' + id).addEventListener('change', e => takeFiles(e.target.files, 'history', '#hp')));
     if (hist.r) paintHistory();
   }
+  /* hist.who holds only what the person chose in "Who the initials are" — never the server's own match, which is
+     worked out afresh each time (the staff list may have come in since the last look).
+     The preview: one question, with whatever has been chosen so far. A file chosen while an earlier preview is still
+     out asks again, and only the last answer is drawn. The names for "Who the initials are" are asked for alongside,
+     not after. */
+  let hturn = 0;
   async function historyPreview() {
-    $('#hp').innerHTML = '<div class="empty">Reading every row, matching it to JORIS…</div>';
-    try { hist.r = await JOR.call('history.preview', { rfp: hist.rfp, ops: hist.ops, quotes: hist.quotes, who: hist.who }); }
-    catch (e) { $('#hp').innerHTML = '<div class="errbox">' + esc(e.message) + '</div>'; return; }
-    hist.r.initials.forEach(x => { if (hist.who[x.code] === undefined) hist.who[x.code] = x.person || ''; });
-    paintHistory();
+    const n = ++hturn;
+    $('#hp').innerHTML = '<div class="empty">Reading every row, matching it to JORIS…<br><span class="mini">This can take up to a minute. Leave the page open.</span></div>';
+    let r;
+    try {
+      const got = await Promise.all([JOR.call('history.preview', { rfp: hist.rfp, ops: hist.ops, quotes: hist.quotes, who: hist.who }),
+        JOR.call('people.list').then(p => p.people.filter(x => x.status === 'active')).catch(() => null)]);
+      r = got[0];
+      if (got[1]) hist.ppl = got[1];
+    } catch (e) { if (n === hturn && view === 'history' && $('#hp')) $('#hp').innerHTML = '<div class="errbox">' + esc(e.message) + '</div>'; return; }
+    if (n !== hturn) return;
+    hist.r = r;
+    if (view === 'history' && $('#hp')) paintHistory();
   }
-  async function paintHistory() {
+  function paintHistory() {
     const r = hist.r, c = r.counts, st = c.byStatus;
-    let ppl = [];
-    try { ppl = (await JOR.call('people.list')).people.filter(p => p.status === 'active'); } catch (e) { /* the list of names is a nicety */ }
+    const ppl = hist.ppl || [];
     const seasons = Object.keys(c.bySeason).sort(), order = ['enquiry', 'quoted', 'confirmed', 'closed', 'lost', 'cancelled'];
     const tile = (k, v, s, cls) => '<div class="tile ' + (cls || '') + '"><div class="k">' + esc(k) + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
     let h = '<div class="tiles" style="margin-top:14px">' + tile('Files', c.add + c.fresh, c.add + ' new' + (c.fresh ? ', ' + c.fresh + ' brought up to date' : '')) +
@@ -346,7 +424,10 @@
     h += '<h3 style="margin-top:16px">Who the initials are</h3><p class="mini" style="margin:0 0 8px">Each file goes to the person its initials belong to. Someone who has left: choose “nobody” — their old files keep the initials in their notes, and anything still open goes to whoever assigns files.</p>' +
       '<div class="tw"><table class="t"><thead><tr><th>Initials</th><th class="num">Files</th><th class="num">Still open</th><th>Person</th></tr></thead><tbody>' +
       r.initials.map(x => '<tr><td><b>' + esc(x.code) + '</b></td><td class="num">' + x.n + '</td><td class="num">' + (x.live || '') + '</td><td><select class="in" data-who="' + esc(x.code) + '">' +
-        UI.options([['', '— nobody (left, or not sure)']].concat(ppl.map(p => [p.id, p.name + (p.initials ? ' (' + p.initials + ')' : '')])), hist.who[x.code] || '') + '</select></td></tr>').join('') + '</tbody></table></div>';
+        UI.options([['', '— nobody (left, or not sure)']].concat(ppl.map(p => [p.id, p.name + (p.initials ? ' (' + p.initials + ')' : '')])), hist.who[x.code] !== undefined ? hist.who[x.code] : x.person || '') + '</select></td></tr>').join('') + '</tbody></table></div>';
+    /* Nobody matched at all: the staff list isn't in yet. Said plainly, before 1,300 files come in belonging to no one. */
+    if (r.initials.length > 2 && !r.initials.some(x => x.guess || x.person)) h += '<div class="warnbox" id="hnobody"><b>None of these initials belong to anyone in JORIS yet.</b> If the staff list isn’t in, bring it in first — on “Bring in a spreadsheet” — and come back: ' +
+      'the files chosen here are kept. Brought in now, every file would come in with no account manager.</div>';
     /* Deposits: each file's own terms — the date is set on the file, not here. */
     const dp = r.deposit;
     if (dp.open) h += '<h3 style="margin-top:16px">Deposits not invoiced yet</h3><p class="mini" style="margin:0 0 8px">' + dp.open + ' group' + (dp.open === 1 ? '' : 's') + ' to come have no deposit invoice on the OPS file. Each file has its own deposit terms, so ' +
@@ -372,11 +453,13 @@
       const ok = await UI.confirm('Bring in JOR’s history?', (c.add + c.fresh).toLocaleString('en-IE') + ' files, with their notes, follow-ups and the money ticks of the groups to come. It takes a minute; best done when the office is quiet. It goes in the log.', 'Bring them in');
       if (!ok) return;
       $('#hrun').disabled = true; $('#hrun').textContent = 'Bringing them in…';
+      $('#he').innerHTML = '<span class="mini" style="color:var(--ink-2,#41564D)">Writing them into JORIS. This takes a minute or two — leave the page open and don’t press anything.</span>';
       try {
         const x = await JOR.call('history.run', { rfp: hist.rfp, ops: hist.ops, quotes: hist.quotes, who: hist.who, label: [hist.names.rfp, hist.names.ops, hist.names.quotes].filter(Boolean).join(' + ') });
         $('#hp').innerHTML = '<div class="okbox" style="margin-top:14px"><b>Done.</b> ' + x.added + ' files added, ' + x.refreshed + ' brought up to date, ' + x.kept + ' left as they were; ' + x.notes + ' notes and follow-ups, ' +
           x.payments + ' payment lines, ' + x.agents + ' agents. It is in the log. <a href="../finance/">See the dashboard</a> · <a href="../register/">the register</a></div>';
-        hist.r = null;
+        hist.r = null; hist.note = '';
+        JOR.forget();                       // every list this tab had kept is from before
       } catch (e) { $('#he').textContent = e.message; $('#hrun').disabled = false; $('#hrun').textContent = 'Bring them in'; }
     });
   }
@@ -385,7 +468,7 @@
      The page reads the file; the server tidies every row and says what
      will go in and what won't, before anything is written. */
   const KINDS = {
-    files: { t: 'RFPs — the quotes window or the RFP board', help: 'Reference, date in, client, contact, email, country, pax, dates, status, account manager, last comment.' },
+    files: { t: 'RFPs — a plain list, one request on each row', help: 'Reference, date in, client, contact, email, country, pax, dates, status, account manager, last comment. JOR’s own RFP window, OPS file and quotes window are known when chosen, and taken to JOR’s history.' },
     people: { t: 'People — the staff list', help: 'Name, work email, job title or role, team, and who has left. New people get a starting code each.' },
     suppliers: { t: 'Suppliers — hotels, visits, restaurants, coaches', help: 'Name, kind, town, county, stars, contact, email, phone.' },
     rates: { t: 'Rates — a supplier’s rates for a year', help: 'Supplier, year, what, how it is charged, the price, the single supplement. JOR’s agreed rates card (coach, guide, lunches & dinners) is read as it is.' },
@@ -395,18 +478,15 @@
     arrival: 'Arrival', departure: 'Departure', received: 'Came in on', status: 'Status', am: 'Account manager', budget: 'Budget', notes: 'Last comment', name: 'Name', town: 'Town', county: 'County', star: 'Stars',
     email: 'Email', phone: 'Phone', supplier: 'Supplier', year: 'Year', label: 'What', unit: 'Charged', amount: 'Price', single: 'Single supplement', validFrom: 'Valid from', validTo: 'Valid to',
     first: 'First name', last: 'Last name', role: 'Role / job title', team: 'Team', initials: 'Initials', left: 'Left / active', consent: 'Agreed to mailings', unsubscribed: 'Unsubscribed', tags: 'Tags' };
-  const imp = { kind: 'files', tabs: null, tab: 0, map: null, opts: {}, name: '' };
+  const imp = { kind: 'files', tabs: null, tab: 0, map: null, opts: {}, name: '', note: '', chosen: false };
   function importer() {
     $('#view').innerHTML = '<div class="card pad"><h3>' + I('upload', 'sm') + 'Bring in a spreadsheet</h3><div class="g2">' + UI.field('What is in it', '<select class="in" id="ik">' + UI.options(Object.keys(KINDS).map(k => [k, KINDS[k].t]), imp.kind) + '</select>', esc(KINDS[imp.kind].help)) +
-      UI.field('The file', '<input class="in" type="file" id="if" accept=".xlsx,.xlsm,.csv,.txt,.xls">', 'An Excel .xlsx or a .csv. An old .xls: open it in Excel and Save As .xlsx first.') + '</div>' +
+      UI.field('The file', '<input class="in" type="file" id="if" accept=".xlsx,.xlsm,.csv,.txt,.xls" multiple>', imp.tabs && imp.name ? '✓ ' + esc(imp.name) : 'An Excel .xlsx or a .csv. An old .xls: open it in Excel and Save As .xlsx first.') + '</div>' +
       '<div id="iopts"></div><div id="ip"></div></div>';
-    $('#ik').addEventListener('change', e => { imp.kind = e.target.value; imp.map = null; importer(); if (imp.tabs) preview(); });
-    $('#if').addEventListener('change', async e => {
-      const f = e.target.files[0];
-      if (!f) return;
-      try { imp.tabs = await SHEET.read(f); imp.name = f.name; imp.tab = 0; imp.map = null; preview(); } catch (x) { $('#ip').innerHTML = '<div class="errbox">' + esc(x.message) + '</div>'; }
-    });
+    $('#ik').addEventListener('change', e => { imp.kind = e.target.value; imp.chosen = true; imp.note = ''; imp.map = null; importer(); });
+    $('#if').addEventListener('change', e => takeFiles(e.target.files, 'import', '#ip'));
     paintOpts();
+    if (imp.tabs) preview();
   }
   function paintOpts() {
     const o = imp.opts, k = imp.kind;
@@ -422,7 +502,7 @@
     const tab = imp.tabs[imp.tab];
     /* JOR's agreed rates card (coach, guide, lunches and dinners, a block per year): read as a plain rates table. */
     const card = imp.kind === 'rates' ? HK.rateCard(tab.rows) : null;
-    const rows = (card || tab.rows).filter(r => r && r.some(c => String(c === undefined || c === null ? '' : c).trim() !== ''));
+    const rows = card ? card.filter(r => r && filled(r)) : table(tab.rows);
     if (rows.length < 2) { $('#ip').innerHTML = '<div class="warnbox">That tab has nothing under its headings.</div>'; return; }
     $('#ip').innerHTML = '<div class="empty">Checking every row…</div>';
     let r;
@@ -430,10 +510,17 @@
     imp.map = r.map;
     const used = {};
     Object.keys(r.map).forEach(f => { used[r.map[f]] = f; });
-    $('#ip').innerHTML = (card ? '<div class="okbox" style="margin-top:12px">JOR’s agreed rates card — read as ' + (rows.length - 1) + ' rates, ' + [...new Set(rows.slice(1).map(x => x[2]))].join(' and ') + '. Coach, guide and lunches go in under “… — JOR agreed rates”, each visit under its own name; the sale price in programmes goes with each.</div>' : '') +
+    /* The columns with a heading; the ones without are folded away, and a column with nothing in it isn't shown at all. */
+    const letter = i => { let t = ''; for (i++; i > 0; i = Math.floor((i - 1) / 26)) t = String.fromCharCode(65 + (i - 1) % 26) + t; return t; };
+    const cols = r.head.map((h, i) => ({ h: h, i: i, eg: (rows.slice(1, 60).filter(x => !blank(x[i]))[0] || [])[i] }));
+    const named = cols.filter(c => c.h), bare = cols.filter(c => !c.h && c.eg !== undefined);
+    const colRow = c => '<tr><td><b>' + esc(c.h || 'Column ' + letter(c.i)) + '</b> <span class="mini">' + esc(String(c.eg === undefined ? '' : c.eg).slice(0, 40)) + '</span></td><td>' +
+      '<select class="in" data-col="' + c.i + '">' + UI.options([['', '— not used']].concat(r.fields.map(f => [f, FIELD_NAMES[f] || f])), used[c.i] || '') + '</select></td></tr>';
+    $('#ip').innerHTML = (imp.note ? '<div class="okbox" style="margin-top:12px">' + imp.note + '</div>' : '') + (card ? '<div class="okbox" style="margin-top:12px">JOR’s agreed rates card — read as ' + (rows.length - 1) + ' rates, ' + [...new Set(rows.slice(1).map(x => x[2]))].join(' and ') + '. Coach, guide and lunches go in under “… — JOR agreed rates”, each visit under its own name; the sale price in programmes goes with each.</div>' : '') +
       (imp.tabs.length > 1 ? UI.field('Tab', '<select class="in" id="it">' + UI.options(imp.tabs.map((t, i) => [i, t.name + ' — ' + t.rows.length + ' rows']), imp.tab) + '</select>') : '') +
-      '<h3 style="margin-top:14px">Which column is which</h3><div class="tw"><table class="t map"><tbody>' + r.head.map((h, i) => '<tr><td><b>' + esc(h || '(no heading)') + '</b> <span class="mini">' + esc(String(rows[1][i] === undefined ? '' : rows[1][i]).slice(0, 40)) + '</span></td><td>' +
-        '<select class="in" data-col="' + i + '">' + UI.options([['', '— not used']].concat(r.fields.map(f => [f, FIELD_NAMES[f] || f])), used[i] || '') + '</select></td></tr>').join('') + '</tbody></table></div>' +
+      '<h3 style="margin-top:14px">Which column is which</h3><div class="tw"><table class="t map"><tbody>' + named.map(colRow).join('') + '</tbody></table></div>' +
+      (bare.length ? '<details' + (bare.some(c => used[c.i] !== undefined) ? ' open' : '') + ' style="margin:8px 0"><summary class="mini"><b>' + bare.length + ' column' + (bare.length === 1 ? ' has' : 's have') + ' no heading</b> — left out, unless you say here what ' +
+        (bare.length === 1 ? 'it is' : 'they are') + '</summary><div class="tw"><table class="t map"><tbody>' + bare.map(colRow).join('') + '</tbody></table></div></details>' : '') +
       '<div class="tiles" style="margin-top:12px"><div class="tile"><div class="k">Rows</div><div class="v">' + r.counts.rows + '</div></div><div class="tile"><div class="k">Go in</div><div class="v">' + r.counts.ok + '</div><div class="s">' + r.counts.updates + ' update' + (r.counts.updates === 1 ? 's one' : 's ones') + ' already there</div></div>' +
       '<div class="tile ' + (r.counts.withProblems ? 'warn' : '') + '"><div class="k">Go in, with a note</div><div class="v">' + r.counts.withProblems + '</div></div><div class="tile ' + (r.counts.blocked ? 'err' : '') + '"><div class="k">Left out</div><div class="v">' + r.counts.blocked + '</div></div></div>' +
       '<div class="card tw"><table class="t"><thead><tr><th>Row</th><th>What goes in</th><th>Notes</th></tr></thead><tbody>' + r.rows.filter(x => x.problems.length || x.block).slice(0, 200).concat(r.rows.filter(x => !x.problems.length && !x.block).slice(0, 8)).map(x =>
@@ -454,7 +541,8 @@
           (x.codes && x.codes.length ? '<h3>Starting codes — give each person theirs yourself</h3><table class="t"><thead><tr><th>Name</th><th>Email</th><th>Starting code</th></tr></thead><tbody>' +
             x.codes.map(c => '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.email) + '</td><td style="font-family:Consolas,monospace;font-weight:700">' + esc(c.code) + '</td></tr>').join('') + '</tbody></table>' +
             '<p class="mini">Good for 7 days, shown only now. They sign in at ' + esc(JOR.ROOT) + ' with their email and the code, then choose their own password.</p>' : '');
-        imp.tabs = null; imp.map = null;
+        imp.tabs = null; imp.map = null; imp.note = '';
+        JOR.forget();                       // every list this tab had kept is from before
       } catch (e) { $('#ie').textContent = e.message; $('#irun').disabled = false; }
     });
   }
