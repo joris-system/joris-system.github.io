@@ -21,7 +21,7 @@
   function arrive(token, keep, who) {
     JOR.setToken(token, keep);
     if (who) JOR.keepMe(who);
-    if (safeNext) { location.href = JOR.ROOT + safeNext; return; }
+    if (safeNext) { location.replace(JOR.ROOT + safeNext); return; }
     history.replaceState(null, '', location.pathname);
     home();
   }
@@ -108,7 +108,7 @@
     const seen = JOR.meKept();
     if (seen) { me = seen.me; JOR.me().catch(() => { }); }
     else {
-      try { me = (await JOR.call('auth.me', {}, { quiet: true })).me; JOR.keepMe(me); }
+      try { const r = await JOR.call('auth.me', {}, { quiet: true }); if (r.door && JOR.door && !JOR.door.key) { JOR.door.forget(); location.reload(); return; } me = r.me; JOR.keepMe(me); }
       catch (e) { if (e.signin) { JOR.clearToken(); showGate(e.message); } else showGate(e.message); return; }
     }
     $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');

@@ -232,12 +232,40 @@
       ['Lost files', ['lostCodes']], ['Signing in', ['deviceCheck', 'deviceDays']],
       ['The office', ['open', 'close', 'firstNumber', 'ratesMonth', 'closed']], ['Emails and Ask JORIS', ['emails', 'reminders', 'siteUrl', 'askJoris']]];
     $('#view').innerHTML = '<div class="card pad">' + groups.map(g => '<h3>' + esc(g[0]) + '</h3><div class="g3">' + g[1].map(one).join('') + '</div>').join('') +
-      '<p class="mini">Work never goes to a shared list: it goes to the person named here, and when they are off, to whoever covers them.</p><div class="acts"><button class="btn p" id="ss">Save</button></div><div class="err" id="se"></div></div>';
+      '<p class="mini">Work never goes to a shared list: it goes to the person named here, and when they are off, to whoever covers them.</p><div class="acts"><button class="btn p" id="ss">Save</button></div><div class="err" id="se"></div></div>' +
+      (me.perms['door.manage'] ? '<div class="card pad" style="margin-top:14px" id="doorcard"></div>' : '');
+    if (me.perms['door.manage']) doorCard();
     $('#ss').addEventListener('click', async () => {
       const out = {};
       $('#view').querySelectorAll('[name]').forEach(i => { out[i.name] = i.value.trim(); });
       try { await JOR.call('settings.save', { settings: out }); UI.toast('Saved.'); settings(); } catch (e) { $('#se').textContent = e.message; }
     });
+  }
+
+  /* The door code: the one code every computer and phone gives, once, before it is shown the sign-in page. An owner's to set. */
+  async function doorCard() {
+    const el = $('#doorcard');
+    if (!el) return;
+    let d;
+    try { d = await JOR.call('door.get'); } catch (e) { el.innerHTML = '<h3>' + I('lock', 'sm') + 'The door code</h3><p class="mini">' + esc(e.message) + '</p>'; return; }
+    el.innerHTML = '<h3>' + I('lock', 'sm') + 'The door code</h3>' +
+      '<p class="mini" style="margin:0 0 10px">One code for all of JOR. A computer or phone is asked for it once, before it is shown the sign-in page; until then the page is blank, with a box at the bottom to type it in. ' +
+      'It keeps strangers and bots away from the sign-in: without it nobody can even try a password. Give it to people along with their starting code. Changing it asks every computer again, once.</p>' +
+      (d.on ? '<div class="okbox">A door code is set.</div>' : '<div class="warnbox">No door code is set: the sign-in page shows to anyone who opens the link.</div>') +
+      '<div class="g2" style="margin-top:10px">' + UI.field(d.on ? 'A new door code' : 'The door code', '<input class="in" id="dc" autocomplete="off" spellcheck="false">', 'At least 6 characters. Capitals and spaces don’t matter.') + '</div>' +
+      '<div class="acts"><button class="btn p" id="dset">' + (d.on ? 'Change the door code' : 'Set the door code') + '</button>' + (d.on ? '<button class="btn dngr" id="doff">Take the door away</button>' : '') + '</div><div class="err" id="de"></div>';
+    const save = async code => {
+      $('#de').textContent = '';
+      try {
+        const r = await JOR.call('door.set', { code: code });
+        if (JOR.door) JOR.door.keep(r.key);                 // this computer carries on without being asked
+        UI.toast(r.on ? 'Set. Every other computer and phone is asked for it once.' : 'The door is gone.', 5000);
+        doorCard();
+      } catch (e) { $('#de').textContent = e.message; }
+    };
+    $('#dset').addEventListener('click', () => { const v = $('#dc').value.trim(); if (!v) { $('#de').textContent = 'Type the door code first.'; return; } save(v); });
+    const off = $('#doff');
+    if (off) off.addEventListener('click', async () => { if (await UI.confirm('Take the door away?', 'The sign-in page will show to anyone who opens the link. Signing in still needs a password, and a code by email on a new computer.', 'Take it away', true)) save(''); });
   }
 
   /* ══ JOR's history: the RFP window, the OPS file, the quotes window ══

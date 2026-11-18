@@ -87,6 +87,8 @@
     'history.import':     'admin',
     /* Everything out as one workbook — every figure in the business: an owner only. */
     'export.all':         'owner',
+    /* The door code — the one code every computer gives before it is shown the sign-in page: an owner's to set. */
+    'door.manage':        'owner',
     /* The finance and KPI dashboard: only management an owner has ticked to see it. */
     'finance.view':       { management: 'finance' }
   };

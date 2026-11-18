@@ -97,12 +97,22 @@ window.UI = (function () {
   function topBar(title, sub, me) {
     const el = document.createElement('div');
     el.className = 'top';
-    el.innerHTML = '<a href="' + JOR.ROOT + '" title="JORIS home"><img data-logo alt="JOR"></a>' +
+    const here = location.href.split(/[?#]/)[0], atHome = here === JOR.ROOT || here === JOR.ROOT + 'index.html';
+    el.innerHTML = (me && !atHome ? '<button class="btn back" data-goback title="Back to where you were">' + icon('back', 'sm') + '<span class="pl">Back</span></button>' : '') +
+      '<a href="' + JOR.ROOT + '" title="JORIS home"><img data-logo alt="JOR"></a>' +
       '<div class="tt"><b>' + esc(title) + '</b><span>' + esc(sub || 'JORIS') + '</span></div><div class="sp"></div>' +
       (me ? '<button class="btn" data-parts title="Every part of JORIS">' + icon('grid', 'sm') + '<span class="pl">Parts</span></button>' +
         '<div class="who"><span class="nm">' + esc(me.name) + '</span><span class="av" title="' + esc(me.name + ' · ' + (RU.ROLES[me.role] || me.role)) + '">' + esc(me.initials || '?') + '</span>' +
         '<button class="btn" data-signout title="Sign out">' + icon('out', 'sm') + '</button></div>' : '');
     document.body.prepend(el);
+    const gb = el.querySelector('[data-goback]');
+    if (gb) gb.addEventListener('click', () => JOR.back());
+    if (me) {
+      JOR.seen();
+      /* The other parts' lists, fetched quietly once this page has had its turn. */
+      setTimeout(() => JOR.warm(['todo.list', 'settings.get'].concat(me.perms['todo.others'] ? ['todo.team'] : [])
+        .concat([['register.view', 'register.list'], ['res.view', 'res.list'], ['money.view', 'money.list'], ['rates.view', 'suppliers.list'], ['agents.view', 'agents.list']].filter(w => me.perms[w[0]]).map(w => w[1]))), 1500);
+    }
     if (me && me.viewer) looking(me);
     el.querySelectorAll('img[data-logo]').forEach(i => { i.src = window.JOR_MARKS.logo; });
     const pm = el.querySelector('[data-parts]');
