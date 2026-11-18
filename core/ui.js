@@ -111,7 +111,7 @@ window.UI = (function () {
       JOR.seen();
       /* The other parts' lists, fetched quietly once this page has had its turn. */
       setTimeout(() => JOR.warm(['todo.list', 'settings.get'].concat(me.perms['todo.others'] ? ['todo.team'] : [])
-        .concat([['register.view', 'register.list'], ['res.view', 'res.list'], ['money.view', 'money.list'], ['rates.view', 'suppliers.list'], ['agents.view', 'agents.list']].filter(w => me.perms[w[0]]).map(w => w[1]))), 1500);
+        .concat([['register.view', 'register.list'], ['res.view', 'res.list'], ['money.view', 'money.list'], ['rates.view', 'suppliers.list'], ['agents.view', 'agents.list'], ['guide.office', 'guide.list'], ['complaints.view', 'complaints.list']].filter(w => me.perms[w[0]]).map(w => w[1]))), 1500);
     }
     if (me && me.viewer) looking(me);
     el.querySelectorAll('img[data-logo]').forEach(i => { i.src = window.JOR_MARKS.logo; });

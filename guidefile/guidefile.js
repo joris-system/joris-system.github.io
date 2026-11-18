@@ -27,6 +27,7 @@
 
   async function load(select) {
     const r = await JOR.call('guide.list');
+    JOR.keep('guide.list', null, r);
     list = r.files; people = r.people; cats = r.cats;
     paintList();
     const ref = select || (cur && cur.ref);
@@ -235,6 +236,9 @@
     } catch (err) { UI.toast(err.message, 5000); }
   });
 
+  /* The list this tab last saw is there at once; the server's answer follows. */
+  const kept = JOR.last('guide.list');
+  if (kept) { list = kept.files; people = kept.people; cats = kept.cats; paintList(); }
   try { await load(want); } catch (e) { $('#glist').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
   if (!want) $('#pane').innerHTML = '<div class="card pad"><h3>' + I('doc', 'sm') + 'Guide files</h3><p>Pick a confirmed group on the left. Make its guide file, drop in its documents — vouchers, rooming lists, the final itinerary, guide notes — and send the guide their link.</p></div>';
   window.addEventListener('hashchange', () => { const r = new URLSearchParams(location.hash.slice(1)).get('ref'); if (r && (!cur || r !== cur.ref) && list.some(f => f.ref === r)) openGroup(r); });

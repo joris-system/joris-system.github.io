@@ -18,12 +18,33 @@
     $('#add').innerHTML = I('plus', 'sm') + 'Add a person';
   }
   $('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; view = b.dataset.tab; history.replaceState(null, '', '#' + view); render(); });
-  function render() { tabs(); ({ people: people, numbers: numbers, log: log, bin: bin, settings: settings, history: historyView, import: importer, export: exporter })[view](); }
+  function render() { tabs(); ({ people: people, numbers: numbers, log: log, bin: bin, settings: settings, history: historyView, import: importer, export: exporter })[view]({ quick: true }); typing = false; }
+  /* Clicking a tab: what this browser tab last saw of it is drawn at once, the server is asked behind it, and the
+     tab is drawn again if the answer is different (and the person is still on it, and hasn't begun typing). After
+     a change — a person added, a number set — only the server's own answer is drawn: o.quick is not set. */
+  const turn = {};
+  let typing = false;
+  async function seenOr(v, a, extra, o, redraw) {
+    if (o && o.data) return o.data;
+    const seen = o && o.quick ? JOR.last(a, extra) : null;
+    const n = turn[v] = (turn[v] || 0) + 1;
+    if (!seen) { const r = await JOR.call(a, extra); JOR.keep(a, extra, r); return r; }
+    JOR.call(a, extra).then(r => {
+      const changed = JSON.stringify(r) !== JSON.stringify(seen);
+      JOR.keep(a, extra, r);
+      if (changed && view === v && turn[v] === n && !typing) redraw({ data: r });
+    }).catch(() => { });
+    return seen;
+  }
+  $('#view').addEventListener('input', () => { typing = true; });
+  /* The other tabs' lists, fetched quietly once this one is drawn. */
+  if (isAdmin) setTimeout(() => JOR.warm(['people.list', 'numbers.list'].concat(me.perms['audit.view'] ? [['audit.list', { limit: 500 }]] : []).concat(me.perms['bin.view'] ? ['bin.list'] : [])), 1000);
 
   /* ══ People ═════════════════════════════════════════════════════════ */
   let list = [];
-  async function people() {
-    try { list = (await JOR.call('people.list')).people; } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+  async function people(o) {
+    try { list = (await seenOr('people', 'people.list', null, o, people)).people.slice(); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+    if (view !== 'people') return;
     const order = p => (p.status === 'left' ? 2 : 0) + (p.waiting ? 0 : 0);
     list.sort((a, b) => order(a) - order(b) || a.name.localeCompare(b.name));
     const state = p => p.status === 'left' ? '<span class="pill lost">left</span>' : p.locked ? '<span class="pill err">locked</span>' : p.waiting ? '<span class="pill warn">hasn’t signed in yet</span>' : '<span class="pill confirmed">active</span>';
@@ -162,9 +183,10 @@
   $('#add').addEventListener('click', () => personForm());
 
   /* ══ Reference numbers ══════════════════════════════════════════════ */
-  async function numbers() {
+  async function numbers(o) {
     let r;
-    try { r = await JOR.call('numbers.list'); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+    try { r = await seenOr('numbers', 'numbers.list', null, o, numbers); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+    if (view !== 'numbers') return;
     $('#view').innerHTML = '<div class="card pad"><p class="mini" style="margin-top:0">Each travel year has its own run of numbers. To carry on from the quotes window, set the next number for that year — it can’t go below one already used.</p>' +
       '<table class="t"><thead><tr><th>Travel year</th><th>Last used</th><th>Next</th><th></th></tr></thead><tbody>' +
       r.years.map(y => '<tr><td><b>20' + esc(y.year) + '</b></td><td>' + (y.used ? esc(RU.ref(y.year, y.used)) : '—') + '</td><td class="ref">' + esc(RU.ref(y.year, y.next)) + '</td>' +
@@ -186,9 +208,10 @@
 
   /* ══ Who changed what ═══════════════════════════════════════════════ */
   let logRef = '';
-  async function log() {
+  async function log(o) {
     let r;
-    try { r = await JOR.call('audit.list', { ref: logRef || undefined, limit: 500 }); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+    try { r = await seenOr('log', 'audit.list', logRef ? { ref: logRef, limit: 500 } : { limit: 500 }, o, log); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+    if (view !== 'log') return;
     $('#view').innerHTML = '<div class="bar"><input class="in" id="lr" placeholder="A file reference, e.g. 27/1001" value="' + esc(logRef) + '"><button class="btn" id="lg">Show</button>' +
       (logRef ? '<button class="btn ghost" id="lc">Everything</button>' : '') + '</div><div class="card tw"><table class="t"><thead><tr><th>When</th><th>Who</th><th>What</th><th>File</th><th>Detail</th></tr></thead><tbody>' +
       r.log.map(x => '<tr><td class="nw">' + esc(UI.when(x.when)) + '</td><td class="nw">' + esc(x.who) + '</td><td class="nw">' + esc(x.what) + '</td><td class="nw">' + esc(x.ref) + '</td><td>' + esc(x.detail) + '</td></tr>').join('') +
@@ -199,9 +222,10 @@
   }
 
   /* ══ The bin: what was removed, to put back ═══════════════════════════ */
-  async function bin() {
+  async function bin(o) {
     let r;
-    try { r = await JOR.call('bin.list'); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+    try { r = await seenOr('bin', 'bin.list', null, o, bin); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+    if (view !== 'bin') return;
     $('#view').innerHTML = '<p class="mini" style="margin:0 0 10px">Rates, flights, document links and guide-file documents that were removed. Nothing here is gone for good: put it back and it is where it was.</p>' +
       '<div class="card tw">' + (r.bin.length ? '<table class="t"><thead><tr><th>Removed</th><th>By</th><th>What</th><th>File</th><th></th></tr></thead><tbody>' +
       r.bin.map(x => '<tr><td class="nw">' + esc(UI.when(x.at)) + '</td><td class="nw">' + esc(x.by) + '</td><td><b>' + esc(x.kind) + '</b> ' + esc(x.what) + '</td><td class="nw">' + esc(x.ref) + '</td><td class="nw">' +
@@ -213,9 +237,11 @@
   }
 
   /* ══ Settings ═══════════════════════════════════════════════════════ */
-  async function settings() {
+  async function settings(o) {
     let r;
-    try { r = await JOR.call('settings.get'); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+    try { r = await seenOr('settings', 'settings.get', null, o, settings); } catch (e) { $('#view').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+    if (view !== 'settings') return;
+    typing = false;
     const ppl = r.people;
     const input = (k, d, val) => d.kind === 'person' ? '<select class="in" name="' + k + '">' + UI.options([['', d.blank || (d.dflt === '' ? '— worked out (the only one in that role, or whoever assigns files)' : '—')]].concat(ppl.map(p => [p.id, p.name + ' — ' + (RU.ROLES[p.role] || p.role)])), val) + '</select>'
       : d.kind === 'onoff' ? '<select class="in" name="' + k + '">' + UI.options([['on', 'On'], ['off', 'Off']], val) + '</select>'

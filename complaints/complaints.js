@@ -23,7 +23,7 @@
   if (!me.perms['complaints.log']) $('#add').classList.add('hidden');
 
   async function load() {
-    try { d = await JOR.call('complaints.list'); } catch (e) { $('#view').innerHTML = '<div class="card pad empty">' + esc(e.message) + '</div>'; return; }
+    try { d = await JOR.call('complaints.list'); JOR.keep('complaints.list', null, d); } catch (e) { $('#view').innerHTML = '<div class="card pad empty">' + esc(e.message) + '</div>'; return; }
     draw();
     const h = hash();
     if (h.get('complaint')) { const c = d.complaints.find(x => x.id === h.get('complaint')); if (c) open(c); }
@@ -147,5 +147,8 @@
   });
 
   window.addEventListener('hashchange', () => { const h = hash(); if (h.get('complaint') && d) { const c = d.complaints.find(x => x.id === h.get('complaint')); if (c && !document.querySelector('.scrim')) open(c); } });
+  /* What this tab last saw is there at once; the server's answer follows. */
+  const kept = JOR.last('complaints.list');
+  if (kept) { d = kept; draw(); }
   load();
 })();

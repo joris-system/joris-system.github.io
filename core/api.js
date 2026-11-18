@@ -156,14 +156,18 @@ window.JOR = (function () {
      instead of after the wait. Skipped for anything this tab kept in the last
      few minutes, when the tab is in the background, or on a phone saving data. */
   let warming = false;
+  const queue = [];
   async function warm(list) {
-    if (cfg.warm === false || warming || document.hidden || (navigator.connection && navigator.connection.saveData)) return;
+    if (cfg.warm === false || (navigator.connection && navigator.connection.saveData)) return;
+    list.forEach(w => queue.push(w));
+    if (warming) return;
     warming = true;
     try {
-      for (const a of list) {
-        if (document.hidden) break;
-        if (lives.some(x => x[0] === a) || age(a) < 4 * 60000) continue;
-        try { keep(a, null, await call(a, null, { quiet: true, silent: true })); } catch (e) { if (e.signin || e.offline) break; }
+      while (queue.length) {
+        if (document.hidden) { queue.length = 0; break; }
+        const w = queue.shift(), a = Array.isArray(w) ? w[0] : w, extra = Array.isArray(w) ? w[1] : null;
+        if (lives.some(x => x[0] === a) || age(a, extra) < 4 * 60000) continue;
+        try { keep(a, extra, await call(a, extra, { quiet: true, silent: true })); } catch (e) { if (e.signin || e.offline) { queue.length = 0; break; } }
       }
     } finally { warming = false; }
   }
