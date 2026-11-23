@@ -355,7 +355,8 @@
     if (own.length) {
       if (!me.perms['history.import']) { $(box).innerHTML = '<div class="errbox">' + esc(own[0].name) + ' is ' + OWN[own[0].kind] + '. JOR’s own workbooks are brought in by an admin, on “JOR’s history”.</div>'; return; }
       const twice = own.filter((o, i) => own.findIndex(x => x.kind === o.kind) !== i);
-      own.forEach(o => { hist[o.kind] = slim(o.tabs, o.kind); hist.names[o.kind] = o.name; });
+      /* The quotes window goes tidied — every cell under one set of headings, Excel's slips mended — so it reads the same on any copy of the server. */
+      own.forEach(o => { hist[o.kind] = slim(o.kind === 'quotes' ? HK.tidyQuotes(o.tabs) : o.tabs, o.kind); hist.names[o.kind] = o.name; });
       hist.r = null;
       hist.note = [from === 'import' ? andList(own.map(o => '<b>' + esc(o.name) + '</b> is ' + OWN[o.kind])) + '. JOR’s own workbooks come in on this screen, so ' + (own.length === 1 ? 'it has' : 'they have') + ' been brought here.' : '',
         twice.length ? 'Two of those are ' + OWN[twice[0].kind] + ' — one at a time: <b>' + esc(hist.names[twice[0].kind]) + '</b> is the one here.' : '',

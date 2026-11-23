@@ -519,47 +519,118 @@
   /* ══ The quotes window (Jess's sheet) ════════════════════════════════
      Every RFP as it is registered, a tab per month: Office (the
      department), Ref, the agency, Rec. (the day it came in), Ac/Ex (the
-     account manager), then the contact, country, pax and travel month —
-     their headings differ from tab to tab and the cells don't always sit
-     under them, so after Ac/Ex each is found by what it holds. It says
-     nothing of how a request ended: that is the RFP window's and the OPS
-     file's to say. */
+     account manager), then the contact, the country, pax and the travel
+     month. The headings differ from tab to tab. Pax and Month sit under
+     their own (the last of each, where a tab has two); the contact and
+     the country sit under "Sales Rep" and "Sent" on half the tabs, so
+     each of those is found by what it holds. It says nothing of how a
+     request ended: that is the RFP window's and the OPS file's to say.
+
+     tidyQuotes() puts every tab under one set of headings, each cell in
+     its own column, and mends what Excel and a slip of the hand did:
+       · "12-25" people typed in the Pax cell, which Excel made a date;
+       · a travel date before the day the request came in, on a reference
+         for a later year (12/03/2026 on a 27/ number registered in May
+         2026): the year was mistyped, and the reference's is taken;
+       · the day it came in typed with the wrong year (the March tab of
+         the 2026 workbook with 12/03/2027 on it).
+     quotes() reads the tidy tabs. The page tidies before it sends, so a
+     workbook reads the same whichever copy of the server has it. */
   const QUOTE_HEAD = [/^ref$/, /^rec/];
+  const QUOTE_COLS = ['Office', 'Ref', 'Agency', 'Rec.', 'Ac/Ex', 'Contact', 'Country', 'Pax', 'Month', 'Note'];
   const looksPax = v => pax(v) !== '' || /^(tbc|tba)$/i.test(norm(v)) || /^\d{1,4}\s*(?:-|\/|or|to)\s*\d{1,4}\s*(?:pax)?$/i.test(norm(v));
+  const countryCell = v => typeof v !== 'number' && norm(v).length <= 14 && !!country(v) && (norm(v).length <= 3 || !!C_ALIAS[norm(v).toUpperCase()]);
+  const lastOf = (h, re) => { let k = -1; h.forEach((x, i) => { if (re.test(x)) k = i; }); return k; };
+  const dayOf = d => +d.slice(8) + ' ' + D.MON[+d.slice(5, 7) - 1] + ' ' + d.slice(0, 4);
+  function tidyQuotes(tabs) {
+    const heads = tabs.map(t => heading(t.rows || [], QUOTE_HEAD));
+    /* The year the workbook is for: the one most of its lines came in. */
+    const years = {};
+    let dated = 0;
+    tabs.forEach((t, ti) => {
+      const hd = heads[ti];
+      if (!hd) return;
+      const rc = find(hd.h, /^rec/);
+      for (let i = hd.at + 1; i < t.rows.length; i++) { const d = date((t.rows[i] || [])[rc]); if (d) { years[d.slice(0, 4)] = (years[d.slice(0, 4)] || 0) + 1; dated++; } }
+    });
+    const bookYear = Object.keys(years).filter(y => years[y] > dated * 0.6)[0] || '';
+    return tabs.map((t, ti) => {
+      const hd = heads[ti];
+      if (!hd) return t;
+      const h = hd.h, c = { office: find(h, /^office|^dept/), ref: find(h, /^ref$/), rec: find(h, /^rec/), am: find(h, /^ac ?\/ ?ex|^a ?m$/), pax: lastOf(h, /^pax$/), month: lastOf(h, /^month$/), note: lastOf(h, /^note$/) };
+      const from = (c.am >= 0 ? c.am : c.rec) + 1, under = c.pax >= from && c.month > c.pax;
+      const tabMonth = monthOf(norm(t.name));
+      return { name: t.name, rows: t.rows.map((r, i) => {
+        r = r || [];
+        if (i < hd.at) return r;
+        if (i === hd.at) return QUOTE_COLS.slice();
+        if (!r.some(v => norm(v) !== '')) return [];
+        const notes = c.note >= 0 && norm(r[c.note]) ? [norm(r[c.note])] : [];
+        const rl = refs(r[c.ref]);
+        /* Pax and the travel month from under their headings; where a line has nothing there (the cells a column off), by what each holds. */
+        const here = under && (norm(r[c.pax]) !== '' || norm(r[c.month]) !== '');
+        const items = [];
+        for (let k = from; k < (here ? c.pax : r.length); k++) if (k !== c.note && norm(r[k]) !== '') items.push(r[k]);
+        const ci = items.findIndex(countryCell);
+        const rest = ci >= 0 ? items.slice(ci + 1) : items.slice();
+        let contact = '', paxV = '', travelV = '';
+        if (ci >= 0) contact = items.slice(0, ci).filter(v => typeof v !== 'number')[0] || '';
+        else if (rest.length && typeof rest[0] !== 'number' && !looksPax(rest[0])) contact = rest.shift();
+        if (here) { paxV = r[c.pax]; travelV = r[c.month]; }
+        else {
+          const pi = rest.findIndex(looksPax);
+          if (pi >= 0) { paxV = rest[pi]; travelV = rest[pi + 1] !== undefined ? rest[pi + 1] : ''; }
+          else travelV = rest[0] !== undefined ? rest[0] : '';
+        }
+        /* The day it came in: on the tab for its month, but not in the workbook's year. */
+        let recV = r[c.rec], recD = date(recV);
+        if (recD && bookYear && tabMonth && +recD.slice(5, 7) === tabMonth && recD.slice(0, 4) !== bookYear) {
+          const fixed = isoOf(+bookYear, tabMonth, +recD.slice(8));
+          if (fixed) { notes.push('The day it came in was typed as ' + dayOf(recD) + ' — taken as ' + bookYear + '.'); recV = recD = fixed; }
+        }
+        const typed = recD ? recD.slice(0, 4) : bookYear;
+        /* People typed as "10-12" or "12-25": Excel made it the 10th of December, or December 2025. */
+        if (typeof paxV === 'number' && paxV % 1 === 0 && paxV >= 2000 && paxV < 80000) {
+          const d = fromSerial(paxV), y = d.slice(0, 4), m = +d.slice(5, 7), day = +d.slice(8);
+          paxV = y === typed ? day + '-' + m : day === 1 ? m + '-' + pad(+y % 100) : '';
+        }
+        /* Travel before the day the request came in, in a year before the reference's: the year was mistyped (or
+           left off, and Excel put in the year it was typed). The reference's year is the travel year. */
+        const refYear = rl.length ? '20' + rl[0].slice(0, 2) : '', tv = refYear ? travel(travelV, refYear) : null;
+        if (tv && tv.exact && recD && tv.arrival < recD && tv.arrival.slice(0, 4) < refYear) {
+          const up = d => (d ? isoOf(+d.slice(0, 4) + (+refYear - +tv.arrival.slice(0, 4)), +d.slice(5, 7), +d.slice(8)) : '');
+          const dmy = d => d.slice(8) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4);
+          const a2 = up(tv.arrival), b2 = up(tv.departure);
+          if (a2) { notes.push('Travel was typed as ' + dayOf(tv.arrival) + ', before the request came in — taken as ' + refYear + ', the year of the reference.'); travelV = dmy(a2) + (b2 ? ' to ' + dmy(b2) : ''); }
+        }
+        return [c.office >= 0 ? r[c.office] : '', r[c.ref], r[c.ref + 1], recV, c.am >= 0 ? r[c.am] : '', contact, ci >= 0 ? items[ci] : '', paxV, travelV, notes.join(' ')]
+          .map(v => (v === undefined || v === null ? '' : v));
+      }) };
+    });
+  }
   function quotes(tabs) {
     const files = [], problems = [], seen = [];
-    tabs.forEach(t => {
+    tidyQuotes(tabs).forEach(t => {
       const hd = heading(t.rows || [], QUOTE_HEAD);
       if (!hd) { seen.push({ tab: norm(t.name), used: 0, why: 'no heading row with Ref and Rec.' }); return; }
-      const h = hd.h, c = { office: find(h, /^office|^dept/), ref: find(h, /^ref$/), rec: find(h, /^rec/), am: find(h, /^ac ?\/ ?ex|^a ?m$/) };
-      const agencyAt = c.ref + 1;
       let used = 0;
       for (let i = hd.at + 1; i < t.rows.length; i++) {
         const r = t.rows[i] || [], row = i + 1;
-        const rl = refs(r[c.ref]), agency = norm(r[agencyAt]);
+        const rl = refs(r[1]), agency = norm(r[2]);
         if (/^next number/i.test(agency)) continue;                                                     // Jess's note of the next free numbers
         if (!rl.length) { if (agency) problems.push({ tab: norm(t.name), row: row, why: 'no reference' }); continue; }
         if (!agency) { problems.push({ tab: norm(t.name), row: row, why: 'no agency' }); continue; }
-        /* After Ac/Ex: the contact, the country, the pax and the travel dates, found by what each holds. */
-        const items = [];
-        for (let k = (c.am >= 0 ? c.am : c.rec) + 1; k < r.length; k++) if (norm(r[k]) !== '') items.push(r[k]);
-        let ci = items.findIndex(v => typeof v !== 'number' && norm(v).length <= 14 && !!country(v) && (norm(v).length <= 3 || !!C_ALIAS[norm(v).toUpperCase()]));
-        let contact = '', paxV = '', travelV = '';
-        const rest = ci >= 0 ? items.slice(ci + 1) : items.slice();
-        if (ci >= 0) contact = items.slice(0, ci).filter(v => typeof v !== 'number')[0] || '';
-        else if (rest.length && typeof rest[0] !== 'number' && !looksPax(rest[0])) contact = rest.shift();
-        const pi = rest.findIndex(looksPax);
-        if (pi >= 0) { paxV = rest[pi]; travelV = rest[pi + 1] !== undefined ? rest[pi + 1] : ''; }
-        else travelV = rest[0] !== undefined ? rest[0] : '';
+        const contact = r[5], paxV = r[7], travelV = r[8];
         const tv = travel(travelV, '20' + rl[0].slice(0, 2));
         const rec = {
           tab: norm(t.name), row: row, kind: 'quotes', ref: rl[0], more: rl.slice(1), agency: agency.slice(0, 120),
-          contact: /^(tbc|tba|\?+)$/i.test(norm(contact)) ? '' : norm(contact).slice(0, 120), country: ci >= 0 ? country(items[ci]) : '',
-          pax: pax(paxV), ams: initials(String(r[c.am] === undefined ? '' : r[c.am]).replace(/[`'’]/g, '')), type: c.office >= 0 ? dept(r[c.office]) : '',
-          received: date(r[c.rec]), arrival: tv.arrival, departure: tv.departure, month: tv.month, season: tv.year || '20' + rl[0].slice(0, 2), notes: []
+          contact: /^(tbc|tba|\?+)$/i.test(norm(contact)) ? '' : norm(contact).slice(0, 120), country: country(r[6]),
+          pax: pax(paxV), ams: initials(String(r[4] === undefined ? '' : r[4]).replace(/[`'’]/g, '')), type: dept(r[0]),
+          received: date(r[3]), arrival: tv.arrival, departure: tv.departure, month: tv.month, season: tv.year || '20' + rl[0].slice(0, 2), notes: []
         };
         if (!tv.exact && norm(isSerial(travelV) ? '' : travelV)) rec.notes.push('Travel, as written: ' + norm(travelV));
         if (norm(paxV) !== '' && norm(paxV) !== String(rec.pax)) rec.notes.push('Numbers, as written: ' + norm(paxV));
+        if (norm(r[9])) rec.notes.push(norm(r[9]));
         if (rec.more.length) rec.notes.push('Registered together with ' + rec.more.join(', '));
         /* A series on one line ("27/1500 -27/1503"): each departure has a number of its own (Iain, 29 Oct), so each is a request. */
         [rec].concat(rec.more.map(r2 => Object.assign({}, rec, { ref: r2, more: [], notes: rec.notes.slice() }))).forEach(x => files.push(x));
@@ -634,5 +705,5 @@
     return '';
   }
 
-  root.JOR_HISTORY = { kind, rfp, ops, quotes, rateCard, merge, date, done, travel, pax, paxNote, initials, country, source, dept, refs, week, lostCode, arrivePoint, monthOf, SENT };
+  root.JOR_HISTORY = { kind, rfp, ops, quotes, tidyQuotes, rateCard, merge, date, done, travel, pax, paxNote, initials, country, source, dept, refs, week, lostCode, arrivePoint, monthOf, SENT };
 })(typeof window !== 'undefined' ? window : globalThis);
