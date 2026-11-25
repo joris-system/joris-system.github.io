@@ -168,8 +168,13 @@ window.UI = (function () {
       else if (e.key === 'Escape' && open) { e.stopPropagation(); hide(); }
       else if (e.key === 'Tab' && open && shown[at] && vis.value.trim() && vis.value !== pickLabel(items, hid.value)) choose(shown[at]);
     });
-    pickList.addEventListener('mousedown', e => { if (pickList._box !== box) return; const o = e.target.closest('[data-i]'); if (o) { e.preventDefault(); choose(shown[+o.dataset.i]); } });
-    vis.addEventListener('blur', () => {
+    /* A tap on a phone: pointerdown comes before the box loses focus (mousedown comes after, when the list has gone). */
+    const tap = e => { if (pickList._box !== box) return; const o = e.target.closest('[data-i]'); if (o) { e.preventDefault(); choose(shown[+o.dataset.i]); } };
+    pickList.addEventListener('pointerdown', tap);
+    pickList.addEventListener('mousedown', e => { if (pickList._box === box && e.target.closest('[data-i]')) e.preventDefault(); });
+    /* Losing focus: a moment's grace, so a tap on the list still lands, then whatever was typed is matched. */
+    vis.addEventListener('blur', () => setTimeout(() => {
+      if (document.activeElement === vis) return;
       hide();
       const t = vis.value.trim(), f = fold(t);
       if (!t) { if (hid.value) { hid.value = ''; hid.dispatchEvent(new Event('change', { bubbles: true })); } return; }
@@ -179,7 +184,7 @@ window.UI = (function () {
       if (it) choose(it);
       else if (free) { hid.value = t; hid.dispatchEvent(new Event('change', { bubbles: true })); }
       else { vis.value = pickLabel(items, hid.value); box.classList.add('bad'); }
-    });
+    }, 180));
   }
   /* Every pick box wires itself the moment it is on the page, in a dialog or not. */
   new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType !== 1) return; if (n.classList.contains('pk')) wirePick(n); n.querySelectorAll('.pk').forEach(wirePick); })))

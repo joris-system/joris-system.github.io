@@ -201,12 +201,35 @@
   function syncLine() {
     const n = API.OUT.n, el = $('#syncline');
     if (!el) return;
-    el.innerHTML = n ? '<span class="sy wait">' + I('refresh', 'sm') + n + ' to send</span>' : navigator.onLine === false ? '<span class="sy off">' + I('nosignal', 'sm') + 'No signal — all here</span>' :
+    el.innerHTML = n ? '<span class="sy wait">' + I('refresh', 'sm') + (API.OUT.busy ? 'Sending ' + n + '…' : n + ' to send') + '</span>' : navigator.onLine === false ? '<span class="sy off">' + I('nosignal', 'sm') + 'No signal — all here</span>' :
       '<span class="sy">' + I('check', 'sm') + 'Up to date' + (S.syncedAt ? ' · ' + new Date(S.syncedAt).toTimeString().slice(0, 5) : '') + '</span>';
-    $('#note').innerHTML = n ? '<div class="outbox">' + I('nosignal') + '<span class="sp">' + n + (n === 1 ? ' thing is' : ' things are') + ' saved on this phone and will go when there is signal.</span><button class="btn sm" id="oflush">Send now</button></div>' : '';
+    const why = API.OUT.why;
+    $('#note').innerHTML = n ? '<div class="outbox' + (API.OUT.busy ? ' going' : '') + '">' + I(API.OUT.busy ? 'refresh' : 'nosignal') + '<span class="sp">' +
+      (API.OUT.busy ? 'Sending ' + n + (n === 1 ? ' thing' : ' things') + ' to JOR Shows… (photos can take a little while)' : n + (n === 1 ? ' thing is' : ' things are') + ' saved on this phone, waiting to go.' + (why ? '<br><small>' + esc(why) + '</small>' : '')) +
+      '</span>' + (API.OUT.busy ? '' : '<button class="btn sm" id="oflush">Send now</button>') + '<button class="btn sm" id="oshow">Show me</button></div>' : '';
     const b = $('#oflush'); if (b) b.onclick = () => API.flush();
+    const sm = $('#oshow'); if (sm) sm.onclick = waitingDialog;
   }
 
+  /* What is waiting on this phone, and why — each can be taken out (it then never goes). */
+  async function waitingDialog() {
+    const list = await API.pending();
+    const what = it => it.a === 'show.save' ? 'New show: ' + it.body.show.name : it.a === 'met.remove' ? 'Removing someone' :
+      it.a === 'met.save' ? (it.body.met.id ? 'Change to ' : 'Met ') + ([it.body.met.name, it.body.met.company].filter(Boolean).join(', ') || 'someone') + (it.body.photos && Object.keys(it.body.photos).length ? ' (with photos)' : '') : it.a;
+    UI.dialog({ title: 'Waiting on this phone', wide: true,
+      body: (API.OUT.why ? '<p class="warnbox">' + I('warn', 'sm') + ' Last try: ' + esc(API.OUT.why) + '</p>' : '') + (list.length ? '<div class="mlist">' + list.map(([k, it]) => '<div class="mrow" style="cursor:default"><div class="bd"><b>' + esc(what(it)) + '</b><div class="l2">saved ' + esc(new Date(it.at).toLocaleString()) + '</div></div><button class="btn sm dngr" data-k="' + esc(k) + '">Remove</button></div>').join('') + '</div>' : '<div class="empty">Nothing waiting — all sent.</div>'),
+      foot: '<button class="btn" data-x>Close</button>' + (list.length ? '<button class="btn p" data-go>Send now</button>' : ''),
+      on: (el, close) => {
+        $$('[data-k]', el).forEach(b => b.onclick = async () => {
+          if (!(await UI.confirm('Remove this from the phone?', 'It won’t go to JOR Shows. If it already got there, it stays there.', 'Remove', true))) return;
+          const it = (list.find(x => x[0] === b.dataset.k) || [])[1] || {};
+          await API.removeWaiting(b.dataset.k);
+          if (it.local) S.met = S.met.filter(m => !(m._local && m.id === it.local));      // a new one that never went: off the list too
+          await API.keep(); close(); paint(); waitingDialog();
+        });
+        const g = el.querySelector('[data-go]'); if (g) g.onclick = () => { close(); API.flush(); };
+      } });
+  }
   function defaultShow() {
     const on = S.shows.filter(isOn);
     if (on.length) return on[0].id;
@@ -545,7 +568,7 @@
     $('#view').innerHTML = '<div class="maptools"><button class="chip' + (MAPV.mode === 'shows' ? ' on' : '') + '" data-mode="shows">' + I('pin', 'sm') + 'Where the shows were</button>' +
       '<button class="chip' + (MAPV.mode === 'from' ? ' on' : '') + '" data-mode="from">' + I('users', 'sm') + 'Where the people are from</button></div>' +
       '<div class="two2"><div><div class="mapwrap" id="mapbox">' + svg + '<div class="tip" id="tip"></div></div></div><div class="slist">' +
-      (MAPV.mode === 'shows' ? showsSorted.map(s => '<a href="#" data-s="' + esc(s.id) + '">' + I('pin') + '<div><b>' + esc(s.name) + '</b><span>' + esc([s.city, country(s.country)].filter(Boolean).join(', ')) + ' · ' + esc(dates(s)) + '</span></div><span class="n">' + MET.filter(m => m.showId === s.id).length + '</span></a>').join('')
+      (MAPV.mode === 'shows' ? showsSorted.map(s => '<a href="#" data-s="' + esc(s.id) + '">' + I('pin') + '<div><b>' + esc(s.name) + '</b><span>' + (s.country || s.lat !== null ? esc([s.city, country(s.country)].filter(Boolean).join(', ')) : '<b style="color:var(--err)">Not on the map — tap ✎ to say where</b>') + ' · ' + esc(dates(s)) + '</span></div><span class="n">' + MET.filter(m => m.showId === s.id).length + '</span>' + (s._local ? '' : '<button class="btn sm" data-edit="' + esc(s.id) + '" title="Change the show">✎</button>') + '</a>').join('')
         : topFrom.map(c => '<a href="#" data-c="' + esc(c) + '">' + I('users') + '<div><b>' + esc(country(c)) + '</b><span>' + esc(REGIONS[REGION_OF[c]] || '') + '</span></div><span class="n">' + from[c] + '</span></a>').join('') || '<div class="empty">No countries yet.</div>') + '</div></div>';
     $$('[data-mode]').forEach(b => b.onclick = () => { MAPV.mode = b.dataset.mode; mapView(); });
     const tip = $('#tip'), box = $('#mapbox');
@@ -558,8 +581,28 @@
       tip.style.display = 'block'; tip.style.left = Math.min(r.width - 220, e.clientX - r.left + 12) + 'px'; tip.style.top = (e.clientY - r.top + 12) + 'px';
     });
     box.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
-    $$('[data-s]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); reset(); F.show = el.dataset.s; F.status = ''; go('people'); }));
+    $$('[data-s]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); if (e.target.closest('[data-edit]')) return; reset(); F.show = el.dataset.s; F.status = ''; go('people'); }));
+    $$('[data-edit]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); editShow(b.dataset.edit); }));
     $$('[data-c]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); reset(); F.q = country(el.dataset.c); F.status = ''; go('people'); }));
+  }
+
+  /* A show changed: its name, where it is (city and country — the map follows), its dates. Needs signal. */
+  function editShow(id) {
+    const s = S.shows.find(x => x.id === id);
+    if (!s) return;
+    UI.dialog({ title: 'Change the show', wide: true,
+      body: '<div class="g2">' + UI.field('Name', '<input class="in" name="ename" value="' + esc(s.name) + '">') + UI.field('City', '<input class="in" name="ecity" value="' + esc(s.city || '') + '">') + '</div>' +
+        '<div class="g3">' + UI.field('Country', UI.pick('ecountry', 'country', s.country || '')) + UI.field('Starts', '<input class="in" type="date" name="estarts" value="' + esc(s.starts || '') + '">') + UI.field('Ends', '<input class="in" type="date" name="eends" value="' + esc(s.ends || '') + '">') + '</div>',
+      foot: '<button class="btn" data-x>Cancel</button><button class="btn p" data-ok>Save the show</button>',
+      on: (el, close) => {
+        el.querySelector('[data-ok]').onclick = async () => {
+          const v = n => el.querySelector('[name=' + n + ']').value.trim();
+          try {
+            const r = await API.call('show.save', { show: { id: s.id, name: v('ename'), city: v('ecity'), country: v('ecountry'), starts: v('estarts'), ends: v('eends') } });
+            Object.assign(s, r.show); await API.keep(); close(); paint(); UI.toast('Saved' + (r.show.lat !== null ? ' — it’s on the map.' : r.show.country ? ' — on the map in the middle of its country.' : '.'));
+          } catch (e) { UI.toast(e.offline ? 'This needs signal — try again in a moment.' : e.message, 6000); }
+        };
+      } });
   }
 
   /* ══ Photos: turned the right way, made smaller, a thumbnail beside ══ */
@@ -695,6 +738,7 @@
     if (sel.value !== '+') return sel.value;
     const v = n => el.querySelector('[name=' + n + ']').value.trim();
     if (!v('sname')) throw new Error('Give the new show a name — like “ITB Berlin 2027”.');
+    if (!v('scountry') && !v('scity')) throw new Error('Where is the show? Type the city, or start typing the country and tap it in the list.');
     const twin = S.shows.find(s => s.name.toLowerCase() === v('sname').toLowerCase());
     if (twin) { sel.insertAdjacentHTML('afterbegin', ''); sel.value = twin.id; return twin.id; }
     const key = uid(), local = 'sh' + key;
@@ -966,7 +1010,7 @@
       '<button class="btn p" id="padd">' + I('plus', 'sm') + 'Add to the team</button></div>' +
       '<div class="panel"><h3>Gemini</h3><p class="sub2">' + (A.gemini ? '<b style="color:var(--jor-dark)">The key is in</b> — kept on Google, never shown again. Cards, notes and scanned sheets are read.' : 'No key yet: photos are kept but not read.') + '</p>' +
       UI.field(A.gemini ? 'Replace the key' : 'Paste the Gemini key', '<input class="in" id="gkey" autocomplete="off" placeholder="Paste the key (AQ.… or AIza…)">', 'Use a paid key (Google AI Studio, with billing on) so cards and notes are never used to train Google’s models.') +
-      '<div class="acts"><button class="btn p" id="gset">Put the key in</button>' + (A.gemini ? '<button class="btn" id="gread">' + (A.reading ? 'Stop reading for now' : 'Start reading again') + '</button><button class="btn dngr" id="gclear">Take the key out</button>' : '') + '</div></div>' +
+      '<div class="acts"><button class="btn p" id="gset">Put the key in</button>' + (A.gemini ? '<button class="btn" id="gtest">' + I('check', 'sm') + 'Test the key</button><button class="btn" id="gread">' + (A.reading ? 'Stop reading for now' : 'Start reading again') + '</button><button class="btn dngr" id="gclear">Take the key out</button>' : '') + '</div></div>' +
       '<div class="panel"><h3>JORIS</h3><p class="sub2">' + (A.joris.url ? 'Linked. Every quarter of an hour the people met go to JORIS’s contacts, and JORIS says which companies have sent an RFP.' + (A.joris.said ? '<br>Last: ' + esc(A.joris.said) : '') : 'Not linked yet.') + '</p>' +
       UI.field('JORIS’s web app link', '<input class="in" id="jurl" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(A.joris.url) + '">') +
       '<div class="acts"><button class="btn p" id="jset">' + (A.joris.url ? 'Link again (new code)' : 'Link') + '</button>' + (A.joris.url ? '<button class="btn" id="jnow">' + I('refresh', 'sm') + 'Link with JORIS now</button><button class="btn dngr" id="joff">Unlink</button>' : '') + '</div><div id="jcode"></div></div>' +
@@ -996,6 +1040,12 @@
       try { await API.call('admin.person', { person: { id: p.id, leave: true } }); adminView(); } catch (e) { UI.toast(e.message, 6000); }
     });
     $('#gset').onclick = async () => { try { const r = await API.call('admin.gemini', { key: $('#gkey').value }); UI.toast('The key works — reading with ' + r.model + '.'); await API.sync(); adminView(); } catch (e) { UI.toast(e.message, 7000); } };
+    const gt = $('#gtest'); if (gt) gt.onclick = async () => {
+      gt.disabled = true; gt.textContent = 'Asking Google…';
+      try { const t = (await API.call('admin.gemini', { test: true }, { wait: 90000 })).test; UI.dialog({ title: t.ok ? 'The key works' : 'The key didn’t work', body: '<p>' + (t.ok ? 'Gemini answered through <b>' + esc(t.api) + '</b>, with <b>' + esc(t.model) + '</b>. Cards, sheets and handwriting will be read.' : 'Google said: <b>' + esc(t.said) + '</b></p><p class="mini">Check the key was copied whole, and that billing is on for it in Google AI Studio (or Google Cloud, for an AQ. key).') + '</p>' }); }
+      catch (e) { UI.toast(e.message, 7000); }
+      gt.disabled = false; gt.innerHTML = I('check', 'sm') + 'Test the key';
+    };
     const gr = $('#gread'); if (gr) gr.onclick = async () => { await API.call('admin.gemini', { reading: !A.reading }); await API.sync(); adminView(); };
     const gc = $('#gclear'); if (gc) gc.onclick = async () => { if (await UI.confirm('Take the Gemini key out?', 'Photos are still kept, but nothing is read until a key is put in again.', 'Take it out', true)) { await API.call('admin.gemini', { clear: true }); await API.sync(); adminView(); } };
     $('#jset').onclick = async () => {

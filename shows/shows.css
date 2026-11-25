@@ -230,3 +230,7 @@ details.profile p{margin:8px 0 2px;color:var(--ink-2)}
 .nameb:hover{border-color:var(--jor)}
 .nameb .av{width:38px;height:38px;border-radius:50%;background:var(--on-jor);display:flex;align-items:center;justify-content:center;font-size:13px;color:#13251E}
 .nameb em{margin-left:auto;font-style:normal;color:var(--ink-3)}
+.outbox small{font-weight:400;opacity:.9}
+.outbox.going{background:var(--blue-bg);color:var(--blue)}
+.outbox .btn{flex:0 0 auto}
+.slist a .btn.sm{min-height:30px;padding:2px 9px;margin-left:6px}

@@ -1,8 +1,8 @@
 /* JOR Shows — opens with no signal. The page's own files are kept on the phone (the list is
    written by build.js, with each file's stamp, so a new build is fetched once and kept).
    Nothing from the server is kept here: the page keeps its data itself. */
-const V = '4f3a97be6b';
-const FILES = ["./","index.html","style.css?v=56cf0238","shows.css?v=dae7de44","config.js?v=977a8498","brand.js?v=805730c9","rules.js?v=90fd0df8","dates.js?v=9f278441","qrcode.js?v=accc1969","world.js?v=b7d6d352","ui.js?v=faedb4b1","api.js?v=30e527e0","app.js?v=9d94cff8","icon-192.png","icon-512.png","manifest.webmanifest"];
+const V = '566600275a';
+const FILES = ["./","index.html","style.css?v=56cf0238","shows.css?v=1081642c","config.js?v=977a8498","brand.js?v=805730c9","rules.js?v=90fd0df8","dates.js?v=9f278441","qrcode.js?v=accc1969","world.js?v=b7d6d352","ui.js?v=d469f3cb","api.js?v=ead4dae0","app.js?v=f9ae3f28","icon-192.png","icon-512.png","manifest.webmanifest"];
 self.addEventListener('install', e => { e.waitUntil(caches.open('jor-shows-' + V).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== 'jor-shows-' + V).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
