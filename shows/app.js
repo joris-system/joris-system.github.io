@@ -643,8 +643,8 @@
       '<div class="showline">' + UI.field('Show or conference', '<select class="in" name="showId">' + showOpts + '</select>') + UI.field('Met on', '<input class="in" type="date" name="met" value="' + esc(m.met || today()) + '">') + '</div>' +
       '<div class="newshow hidden" id="newshow"><div class="g2">' + UI.field('Name of the show', '<input class="in" name="sname" placeholder="e.g. ITB Berlin 2027">') + UI.field('City', '<input class="in" name="scity" placeholder="e.g. Berlin">') + '</div>' +
       '<div class="g3">' + UI.field('Country', UI.pick('scountry', 'country', '')) + UI.field('Starts', '<input class="in" type="date" name="sstarts" value="' + esc(today()) + '">') + UI.field('Ends', '<input class="in" type="date" name="sends" value="' + esc(today()) + '">') + '</div></div>' +
-      (isNew ? '<div class="shots"><label class="shot" id="shot-selfie">' + I('selfie', 'lg') + 'Selfie with them<em>take one, or pick from your photos</em><input type="file" accept="image/*" hidden data-shot="selfie"></label>' +
-        '<label class="shot" id="shot-card">' + I('camera', 'lg') + 'Their card or the notes<em>' + (S.reading ? 'take one, or pick from your photos — Gemini reads it' : 'take one, or pick from your photos') + '</em><input type="file" accept="image/*" hidden data-shot="card"></label></div><div id="readbox"></div>' : '') +
+      (isNew ? '<div class="shots">' + shotBox('selfie', 'selfie', 'Selfie with them', 'so you know them next time', 'user') +
+        shotBox('card', 'camera', 'Their card or the notes', S.reading ? 'Gemini reads it for you' : 'kept with them', 'environment') + '</div><div id="readbox"></div>' : '') +
       '<div class="g2">' + UI.field('Company *', '<input class="in" name="company" autocomplete="off" value="' + esc(m.company || '') + '">') + UI.field('Person met *', '<input class="in" name="name" autocomplete="off" value="' + esc(m.name || '') + '">') + '</div>' +
       '<div id="before"></div>' +
       '<label class="f" style="margin-bottom:4px"><span>Priority * — 1 is the most important</span></label><div class="seg" style="margin-bottom:12px">' + ['1', '2', '3'].map(p => '<button type="button" data-p="' + p + '" class="p' + p + (m.priority === p ? ' on' : '') + '">' + p + '<span>' + PRN[p] + '</span></button>').join('') + '</div><input type="hidden" name="priority" value="' + esc(m.priority || '') + '">' +
@@ -657,6 +657,12 @@
       UI.field('Notes', '<textarea class="in" name="notes" rows="3" placeholder="What they want, group sizes, dates — or press the microphone on the keyboard and say it">' + esc(m.notes || '') + '</textarea>') +
       (isNew ? '' : UI.field('Keywords', '<input class="in" name="tags" value="' + esc(m.tags || '') + '">', 'Commas between them — Gemini adds these from the notes')) +
       '<label class="chk"><input type="checkbox" name="canEmail"' + (m.canEmail === 'yes' ? ' checked' : '') + '> Happy to get JOR’s emails</label></div>';
+  }
+  /* A photo box: Take photo opens the camera, From photos the phone's own photos. */
+  function shotBox(which, icon, title, hint, facing) {
+    return '<div class="shot" id="shot-' + which + '">' + I(icon, 'lg') + '<span class="st">' + title + '</span><em>' + hint + '</em><div class="shotbtns">' +
+      '<label class="btn sm">' + I('camera', 'sm') + 'Take photo<input type="file" accept="image/*" capture="' + facing + '" hidden data-shot="' + which + '"></label>' +
+      '<label class="btn sm">' + I('img', 'sm') + 'From photos<input type="file" accept="image/*" hidden data-shot="' + which + '" data-library></label></div></div>';
   }
   function wireForm(el, m) {
     const sel = el.querySelector('[name=showId]'), ns = el.querySelector('#newshow');
@@ -781,8 +787,8 @@
             const img = await prepImage(file);
             shots[which] = img;
             box.classList.add('has');
-            box.querySelectorAll('img,.redo').forEach(x => x.remove());
-            box.insertAdjacentHTML('beforeend', '<img alt="" src="' + img.url + '"><span class="redo">Take again</span>');
+            box.querySelectorAll(':scope > img').forEach(x => x.remove());
+            box.insertAdjacentHTML('afterbegin', '<img alt="" src="' + img.url + '">');
             if (which === 'card') readCard(img);
           } catch (e) { UI.toast(e.message); }
         }));

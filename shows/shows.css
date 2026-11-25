@@ -236,3 +236,12 @@ details.profile p{margin:8px 0 2px;color:var(--ink-2)}
 .slist a .btn.sm{min-height:30px;padding:2px 9px;margin-left:6px}
 .btn.met.big{width:100%;min-height:64px;font-size:19px;margin-top:16px;border-radius:14px;position:relative;z-index:1}
 .btn.met.big svg.i{width:24px;height:24px}
+.shot{cursor:default}
+.shot .st{font-weight:600}
+.shot > img{z-index:0}
+.shot > *:not(img){position:relative;z-index:1}
+.shotbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.shotbtns .btn{min-height:36px;padding:5px 10px;font-size:12.5px;background:#fff}
+.shot.has > svg, .shot.has > .st, .shot.has > em{display:none}
+.shot.has{justify-content:flex-end;padding-bottom:8px}
+.shot.has .shotbtns .btn{background:rgba(255,255,255,.94)}
