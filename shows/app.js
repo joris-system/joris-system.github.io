@@ -83,7 +83,7 @@
     const add = '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
     const el = document.createElement('div');
     el.className = 'inst';
-    el.innerHTML = '<div class="inst-c"><img src="icon-192.png" alt=""><div><b>Put JOR Shows on your home screen</b><span>One tap from today’s meetings — and it works with no signal.</span></div><button class="inst-x" aria-label="Not now">' + I('x') + '</button></div>' +
+    el.innerHTML = '<div class="inst-c"><img src="icon-192.png" alt=""><div><b>Put JOR Shows on your home screen</b><span>Open it in one tap at the next show — it works with no signal too.</span></div><button class="inst-x" aria-label="Not now">' + I('x') + '</button></div>' +
       (ios ? '<ol><li>Tap <b>Share</b> ' + share + (chrome ? ' — top right' : ' — at the bottom of the screen') + '</li><li>Scroll down, tap <b>Add to Home Screen</b> ' + add + '</li><li>Tap <b>Add</b>. Then open JOR Shows from its icon.</li></ol>' + (chrome ? '' : '<div class="inst-arrow"></div>')
         : '<div class="acts" style="margin-top:10px"><button class="btn p" id="instgo">' + I('down', 'sm') + 'Install JOR Shows</button></div>');
     document.body.appendChild(el);
