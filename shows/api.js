@@ -102,6 +102,7 @@ window.API = (function () {
         if (!r.same) {
           const merge = (list, rows) => { const at = {}; list.forEach((x, i) => { at[x.id] = i; }); rows.forEach(x => { if (at[x.id] !== undefined) list[at[x.id]] = x; else list.push(x); }); };
           merge(S.shows, r.shows || []);
+          if (Array.isArray(r.showIds)) { const keep = new Set(r.showIds); S.shows = S.shows.filter(s => s._local || keep.has(s.id)); }
           merge(S.met, r.met || []);
           /* One already on the server (it got there, though the phone gave up waiting): the copy still "sending" goes. */
           const there = {};

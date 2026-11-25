@@ -593,8 +593,18 @@
     UI.dialog({ title: 'Change the show', wide: true,
       body: '<div class="g2">' + UI.field('Name', '<input class="in" name="ename" value="' + esc(s.name) + '">') + UI.field('City', '<input class="in" name="ecity" value="' + esc(s.city || '') + '">') + '</div>' +
         '<div class="g3">' + UI.field('Country', UI.pick('ecountry', 'country', s.country || '')) + UI.field('Starts', '<input class="in" type="date" name="estarts" value="' + esc(s.starts || '') + '">') + UI.field('Ends', '<input class="in" type="date" name="eends" value="' + esc(s.ends || '') + '">') + '</div>',
-      foot: '<button class="btn" data-x>Cancel</button><button class="btn p" data-ok>Save the show</button>',
+      foot: (isAdmin() ? '<button class="btn dngr" data-rm>' + I('trash', 'sm') + 'Remove this show</button><span style="flex:1"></span>' : '') + '<button class="btn" data-x>Cancel</button><button class="btn p" data-ok>Save the show</button>',
       on: (el, close) => {
+        const rm = el.querySelector('[data-rm]');
+        if (rm) rm.onclick = async () => {
+          const n = S.met.filter(m => m.showId === s.id).length;
+          if (!(await UI.confirm('Remove ' + s.name + '?', n ? 'The ' + n + (n === 1 ? ' person' : ' people') + ' met at it go too. For a test show, or one made by mistake. (Admin › Removed can put a person back.)' : 'Nobody was met at it.', 'Remove the show', true))) return;
+          try {
+            await API.call('show.remove', { id: s.id, withPeople: true });
+            S.shows = S.shows.filter(x => x.id !== s.id); S.met = S.met.filter(m => m.showId !== s.id);
+            await API.keep(); close(); paint(); UI.toast(s.name + ' removed.');
+          } catch (e) { UI.toast(e.offline ? 'This needs signal — try again in a moment.' : e.message, 6000); }
+        };
         el.querySelector('[data-ok]').onclick = async () => {
           const v = n => el.querySelector('[name=' + n + ']').value.trim();
           try {
