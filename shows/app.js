@@ -257,8 +257,8 @@
     const nowLine = on.map(s => { const n = MET.filter(m => m.showId === s.id).length, mine = MET.filter(m => m.showId === s.id && m.by === S.me.id).length;
       return '<div class="sh-now"><span class="live"></span><div><b>' + esc(s.name) + ' is on today</b><div style="opacity:.85;font-size:13px">' + n + ' met so far' + (mine && mine !== n ? ' · ' + mine + ' by you' : '') + (s.city ? ' · ' + esc(s.city) : '') + '</div></div></div>'; }).join('');
     const kpi = (v, label, go, cls) => '<div class="sh-kpi ' + (cls || '') + '"' + (go ? ' data-go="' + go + '"' : '') + '><b data-count="' + v + '">' + v + '</b><span>' + label + '</span></div>';
-    $('#hero').innerHTML = '<div class="sh-hero"><div class="row"><div><h2>Who we met</h2><p>Every show and conference, and what came of it.</p></div><div class="sp"></div>' +
-      '<button class="btn onjor" id="scanbtn">' + I('upload', 'sm') + 'Scan a PDF</button><button class="btn met" id="metbtn">' + I('camera') + 'Met someone</button></div>' + nowLine +
+    $('#hero').innerHTML = '<div class="sh-hero"><div class="row"><div><h2>Who we met</h2><p>Every show and conference, and what came of it.</p></div></div>' +
+      '<button class="btn met big" id="metbtn">' + I('camera', 'lg') + 'Met someone</button>' + nowLine +
       '<div class="sh-kpis">' + kpi(S.shows.length, S.shows.length === 1 ? 'show' : 'shows', 'map') + kpi(f.met, 'people met', 'people') + kpi(f.companies, 'companies', 'companies') +
       kpi(f.p1, 'priority 1', 'p1', 'gold') + kpi(f.mineDue, 'your follow-ups this week', 'due') + kpi(f.rfpCos, 'companies sent an RFP', 'rfp', 'gold') + '</div></div>';
     if (!counted) { counted = true; countUp($('#hero')); }
@@ -271,7 +271,6 @@
       go(g === 'map' ? 'map' : g === 'companies' ? 'companies' : 'people');
     });
     $('#metbtn').onclick = () => capture();
-    $('#scanbtn').onclick = () => scanDialog();
   }
   /* ══ Today's meetings: the sheets printed before the show, in time order, the next one first.
      A tap on 1, 2 or 3 and it is met — six minutes to the next one leaves no time for a form. ══ */
@@ -644,8 +643,8 @@
       '<div class="showline">' + UI.field('Show or conference', '<select class="in" name="showId">' + showOpts + '</select>') + UI.field('Met on', '<input class="in" type="date" name="met" value="' + esc(m.met || today()) + '">') + '</div>' +
       '<div class="newshow hidden" id="newshow"><div class="g2">' + UI.field('Name of the show', '<input class="in" name="sname" placeholder="e.g. ITB Berlin 2027">') + UI.field('City', '<input class="in" name="scity" placeholder="e.g. Berlin">') + '</div>' +
       '<div class="g3">' + UI.field('Country', UI.pick('scountry', 'country', '')) + UI.field('Starts', '<input class="in" type="date" name="sstarts" value="' + esc(today()) + '">') + UI.field('Ends', '<input class="in" type="date" name="sends" value="' + esc(today()) + '">') + '</div></div>' +
-      (isNew ? '<div class="shots"><label class="shot" id="shot-selfie">' + I('selfie', 'lg') + 'Selfie with them<em>so you know them next time</em><input type="file" accept="image/*" capture="user" hidden data-shot="selfie"></label>' +
-        '<label class="shot" id="shot-card">' + I('camera', 'lg') + 'Their card or the notes<em>' + (S.reading ? 'Gemini reads it for you' : 'kept with them') + '</em><input type="file" accept="image/*" capture="environment" hidden data-shot="card"></label></div><div id="readbox"></div>' : '') +
+      (isNew ? '<div class="shots"><label class="shot" id="shot-selfie">' + I('selfie', 'lg') + 'Selfie with them<em>take one, or pick from your photos</em><input type="file" accept="image/*" hidden data-shot="selfie"></label>' +
+        '<label class="shot" id="shot-card">' + I('camera', 'lg') + 'Their card or the notes<em>' + (S.reading ? 'take one, or pick from your photos — Gemini reads it' : 'take one, or pick from your photos') + '</em><input type="file" accept="image/*" hidden data-shot="card"></label></div><div id="readbox"></div>' : '') +
       '<div class="g2">' + UI.field('Company *', '<input class="in" name="company" autocomplete="off" value="' + esc(m.company || '') + '">') + UI.field('Person met *', '<input class="in" name="name" autocomplete="off" value="' + esc(m.name || '') + '">') + '</div>' +
       '<div id="before"></div>' +
       '<label class="f" style="margin-bottom:4px"><span>Priority * — 1 is the most important</span></label><div class="seg" style="margin-bottom:12px">' + ['1', '2', '3'].map(p => '<button type="button" data-p="' + p + '" class="p' + p + (m.priority === p ? ' on' : '') + '">' + p + '<span>' + PRN[p] + '</span></button>').join('') + '</div><input type="hidden" name="priority" value="' + esc(m.priority || '') + '">' +
@@ -1102,5 +1101,7 @@
     if (/^met=/.test(h)) { view = 'people'; paint(); openMet(h.slice(4)); return; }
     if (['people', 'companies', 'map', 'check', 'admin'].indexOf(h) >= 0) go(h);
     if (h === 'new') capture();
+    if (h === 'scan') scanDialog();
   }
+  window.addEventListener('hashchange', () => { if (!document.querySelector('.scrim') && /^(met=|scan|new)/.test(decodeURIComponent(location.hash.slice(1)))) route(); });
 })();

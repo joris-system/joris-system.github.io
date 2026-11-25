@@ -234,3 +234,5 @@ details.profile p{margin:8px 0 2px;color:var(--ink-2)}
 .outbox.going{background:var(--blue-bg);color:var(--blue)}
 .outbox .btn{flex:0 0 auto}
 .slist a .btn.sm{min-height:30px;padding:2px 9px;margin-left:6px}
+.btn.met.big{width:100%;min-height:64px;font-size:19px;margin-top:16px;border-radius:14px;position:relative;z-index:1}
+.btn.met.big svg.i{width:24px;height:24px}
