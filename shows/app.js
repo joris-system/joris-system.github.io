@@ -13,7 +13,9 @@
   const $ = s => document.querySelector(s), $$ = (s, el) => [...(el || document).querySelectorAll(s)];
   const esc = UI.esc, I = UI.icon, D = UI.D, RU = UI.RU;
   let S = null, view = 'dash', MET = [];          // MET: the meetings that happened (planned ones are in "Today's meetings")
-  const F = { q: '', show: '', pr: '', loc: '', owner: '', status: 'open', due: false, sort: 'new' };
+  const F = { q: '', show: '', pr: '', loc: '', owner: '', status: 'open', due: false, todo: false, sort: 'new' };
+  /* Saved in a hurry at the stand — the company, the name or the priority still to add. */
+  const unfinished = m => !m.planned && !m._local && m.check !== 'yes' && (!m.company || !m.name || !m.priority);
   const MAPV = { mode: 'shows' };
 
   /* ── The way in: no link on this phone, nothing to show ── */
@@ -217,7 +219,8 @@
   async function waitingDialog() {
     const list = await API.pending();
     const what = it => it.a === 'show.save' ? 'New show: ' + it.body.show.name : it.a === 'met.remove' ? 'Removing someone' :
-      it.a === 'met.save' ? (it.body.met.id ? 'Change to ' : 'Met ') + ([it.body.met.name, it.body.met.company].filter(Boolean).join(', ') || 'someone') + (it.body.photos && Object.keys(it.body.photos).length ? ' (with photos)' : '') : it.a;
+      it.a === 'met.save' ? (it.body.met.id ? 'Change to ' : 'Met ') + ([it.body.met.name, it.body.met.company].filter(Boolean).join(', ') || 'someone') + (it.body.photos && Object.keys(it.body.photos).length ? ' (with photos)' : '') :
+      it.a === 'met.addphoto' ? (it.body.which === 'selfie' ? 'A selfie for ' : 'A card for ') + (((S.met.find(m => m.id === it.body.id) || {}).company) || 'someone') : it.a;
     UI.dialog({ title: 'Waiting on this phone', wide: true,
       body: (API.OUT.why ? '<p class="warnbox">' + I('warn', 'sm') + ' Last try: ' + esc(API.OUT.why) + '</p>' : '') + (list.length ? '<div class="mlist">' + list.map(([k, it]) => '<div class="mrow" style="cursor:default"><div class="bd"><b>' + esc(what(it)) + '</b><div class="l2">saved ' + esc(new Date(it.at).toLocaleString()) + '</div></div><button class="btn sm dngr" data-k="' + esc(k) + '">Remove</button></div>').join('') + '</div>' : '<div class="empty">Nothing waiting — all sent.</div>'),
       foot: '<button class="btn" data-x>Close</button>' + (list.length ? '<button class="btn p" data-go>Send now</button>' : ''),
@@ -254,6 +257,12 @@
     };
   }
   let counted = false;
+  /* Those saved with only a selfie, a company or a name: one tap to the list, to finish them. */
+  function todoLine() {
+    const all = MET.filter(unfinished), mine = all.filter(m => m.by === S.me.id || (m.owner || m.by) === S.me.id).length;
+    if (!all.length) return '';
+    return '<button class="sh-todo" id="htodo">' + I('warn', 'sm') + '<span><b>' + all.length + ' still to finish</b> — a name, company or priority to add' + (mine && mine !== all.length ? ' (' + mine + ' yours)' : '') + '</span></button>';
+  }
   function hero() {
     const f = figures(), on = S.shows.filter(isOn);
     const nowLine = on.map(s => { const n = MET.filter(m => m.showId === s.id).length, mine = MET.filter(m => m.showId === s.id && m.by === S.me.id).length;
@@ -262,7 +271,7 @@
     $('#hero').innerHTML = '<div class="sh-hero"><div class="row"><div><h2>Who we met</h2><p>Every show and conference, and what came of it.</p></div></div>' +
       '<button class="btn met big" id="metbtn">' + I('camera', 'lg') + 'Met someone</button>' +
       '<div class="sh-more"><button class="btn addshow" id="addshow">' + I('plus', 'sm') + 'Add a trade show</button>' +
-      '<form class="sh-find" id="hfind" role="search">' + I('search', 'sm') + '<input id="hq" type="search" enterkeyhint="search" autocomplete="off" placeholder="Find anyone — name, place, notes…"></form></div>' + nowLine +
+      '<form class="sh-find" id="hfind" role="search">' + I('search', 'sm') + '<input id="hq" type="search" enterkeyhint="search" autocomplete="off" placeholder="Find anyone — name, place, notes…"></form></div>' + todoLine() + nowLine +
       '<div class="sh-kpis">' + kpi(S.shows.length, S.shows.length === 1 ? 'show' : 'shows', 'map') + kpi(f.met, 'people met', 'people') + kpi(f.companies, 'companies', 'companies') +
       kpi(f.p1, 'priority 1', 'p1', 'gold') + kpi(f.mineDue, 'your follow-ups this week', 'due') + kpi(f.rfpCos, 'companies sent an RFP', 'rfp', 'gold') + '</div></div>';
     if (!counted) { counted = true; countUp($('#hero')); }
@@ -276,6 +285,7 @@
     });
     $('#metbtn').onclick = () => capture();
     $('#addshow').onclick = () => addShow();
+    const td = $('#htodo'); if (td) td.onclick = () => { reset(); F.todo = true; F.status = ''; go('people'); };
     /* Search from the front: every status, every show — whatever they remember. */
     $('#hfind').onsubmit = e => { e.preventDefault(); const v = $('#hq').value.trim(); if (!v) return; reset(); F.q = v; F.status = ''; go('people'); const q = $('#q'); if (q) { q.focus(); q.setSelectionRange(v.length, v.length); } };
   }
@@ -339,7 +349,7 @@
     paint();
     const t = $('#tabs'); if (t && window.scrollY > t.offsetTop) window.scrollTo({ top: t.offsetTop - 70, behavior: 'smooth' });
   }
-  function reset() { Object.assign(F, { q: '', show: '', pr: '', loc: '', owner: '', status: 'open', due: false, sort: 'new' }); }
+  function reset() { Object.assign(F, { q: '', show: '', pr: '', loc: '', owner: '', status: 'open', due: false, todo: false, sort: 'new' }); }
 
   /* ══ Dashboard ════════════════════════════════════════════════════════ */
   function dash() {
@@ -448,6 +458,7 @@
       if (F.loc && !inLoc(m, F.loc)) return false;
       if (F.owner && (m.owner || m.by) !== F.owner) return false;
       if (!anyStatus && (F.status === 'open' ? m.status !== 'new' : F.status && m.status !== F.status)) return false;
+      if (F.todo && !unfinished(m)) return false;
       if (F.due && !(m.status === 'new' && m.nextDate && m.nextDate <= today())) return false;
       if (words.length) { const h = m._h || (m._h = hay(m)); if (!words.every(w => h.indexOf(w) >= 0)) return false; }
       return true;
@@ -475,11 +486,11 @@
     const others = (links().people[m._pk] || []).filter(x => x.id !== m.id).length;
     words = words || [];
     return '<div class="mrow' + (m._local ? ' local' : '') + '" data-id="' + esc(m.id) + '"><div class="av2"' + (pic ? ' data-thumb="' + esc(pic) + '"' : '') + '>' + (m._photo ? '<img alt="" src="' + m._photo + '">' : esc(initials(m))) + '</div>' +
-      '<div class="bd"><b>' + mark(m.name || m.company || 'To be typed in from the sheet', words) + (m.name && m.company ? ' <span style="font-weight:400;color:var(--ink-2)">· ' + mark(m.company, words) + '</span>' : '') + '</b>' +
+      '<div class="bd"><b>' + mark(m.name || m.company || (m.sheet ? 'To be typed in from the sheet' : 'Someone met — add who'), words) + (m.name && m.company ? ' <span style="font-weight:400;color:var(--ink-2)">· ' + mark(m.company, words) + '</span>' : '') + '</b>' +
       '<div class="l2">' + mark(s.name, words) + ' · ' + esc(UI.nice(m.met, true)) + (m.country ? ' · ' + mark(country(m.country), words) : '') + (others ? ' · <span class="again">met ' + (others + 1) + ' times</span>' : '') + '</div>' +
       '<div class="l3">' + (hit ? I('search', 'sm') + ' ' + hit : esc(m.summary || m.nextStep || m.notes || '')) + '</div>' +
       (m.tags ? '<div>' + String(m.tags).split(/\s*,\s*/).slice(0, 5).map(t => '<span class="tagc">' + mark(t, words) + '</span>').join('') + '</div>' : '') + '</div>' +
-      '<div class="rt">' + prBadge(m.priority) + (m._local ? '<span class="pill warn">Sending…</span>' : m.check === 'yes' ? '<span class="pill warn">To check</span>' : m.status !== 'new' ? '<span class="pill">' + STATUS[m.status] + '</span>' : '') +
+      '<div class="rt">' + prBadge(m.priority) + (m._local ? '<span class="pill warn">Sending…</span>' : m.check === 'yes' ? '<span class="pill warn">To check</span>' : unfinished(m) ? '<span class="pill warn">To finish</span>' : m.status !== 'new' ? '<span class="pill">' + STATUS[m.status] + '</span>' : '') +
       (m.groups ? '<span class="won">' + m.groups + ' group' + (m.groups === 1 ? '' : 's') + '</span>' : m.rfps ? '<span class="won">' + m.rfps + ' RFP' + (m.rfps === 1 ? '' : 's') + '</span>' : '') +
       (m.status === 'new' && m.nextDate ? '<span class="due' + (late ? ' late' : '') + '">' + I('clock', 'sm') + ' ' + esc(UI.when(m.nextDate)) + '</span>' : '') + '</div></div>';
   }
@@ -487,7 +498,7 @@
     const rows = filtered(), words = fold(F.q).split(/\s+/).filter(Boolean), shown = rows.slice(0, 300);
     /* Searching for someone: those already followed up (or gone cold) are said, one tap away. */
     const more = F.status && (F.q || F.loc) ? filtered(true).length - rows.length : 0;
-    $('#count').innerHTML = esc(rows.length + (rows.length === 1 ? ' person' : ' people') + (F.show ? ' met at ' + showOf(F.show).name : '') + (F.q ? ' matching “' + F.q + '”' : '')) +
+    $('#count').innerHTML = esc(rows.length + (rows.length === 1 ? ' person' : ' people') + (F.show ? ' met at ' + showOf(F.show).name : '') + (F.q ? ' matching “' + F.q + '”' : '') + (F.todo ? ' still to finish' : '')) +
       (more > 0 ? ' · <a href="#" id="allst">' + more + ' more already followed up or gone cold — show them</a>' : '');
     const al = $('#allst'); if (al) al.onclick = e => { e.preventDefault(); F.status = ''; $('#fst').value = ''; list(); };
     $('#mlist').innerHTML = shown.length ? shown.map(m => row(m, words)).join('') + (rows.length > shown.length ? '<p class="sh-count">… and ' + (rows.length - shown.length) + ' more — search to narrow it down.</p>' : '') :
@@ -714,10 +725,10 @@
       '<div class="g3">' + UI.field('Country', UI.pick('scountry', 'country', '')) + UI.field('Starts', '<input class="in" type="date" name="sstarts" value="' + esc(today()) + '">') + UI.field('Ends', '<input class="in" type="date" name="sends" value="' + esc(today()) + '">') + '</div></div>' +
       (isNew ? '<div class="shots">' + shotBox('selfie', 'selfie', 'Selfie with them', 'so you know them next time', 'user') +
         shotBox('card', 'camera', 'Their card or the notes', S.reading ? 'Gemini reads it for you' : 'kept with them', 'environment') + '</div><div id="readbox"></div>' : '') +
-      '<div class="g2">' + UI.field('Company *', '<input class="in" name="company" autocomplete="off" value="' + esc(m.company || '') + '">') + UI.field('Person met *', '<input class="in" name="name" autocomplete="off" value="' + esc(m.name || '') + '">') + '</div>' +
+      '<div class="g2">' + UI.field('Company', '<input class="in" name="company" autocomplete="off" value="' + esc(m.company || '') + '">') + UI.field('Person met', '<input class="in" name="name" autocomplete="off" value="' + esc(m.name || '') + '">') + '</div>' +
       '<div id="before"></div>' +
-      '<label class="f" style="margin-bottom:4px"><span>Priority * — 1 is the most important</span></label><div class="seg" style="margin-bottom:12px">' + ['1', '2', '3'].map(p => '<button type="button" data-p="' + p + '" class="p' + p + (m.priority === p ? ' on' : '') + '">' + p + '<span>' + PRN[p] + '</span></button>').join('') + '</div><input type="hidden" name="priority" value="' + esc(m.priority || '') + '">' +
-      '<p class="optional">' + (isNew ? 'Only the three marked * are needed. The rest is optional — ' + (S.reading ? 'Gemini fills what it can from the card.' : 'fill in what you have.') : 'Everything below is optional.') + '</p>' +
+      '<label class="f" style="margin-bottom:4px"><span>Priority — 1 is the most important</span></label><div class="seg" style="margin-bottom:12px">' + ['1', '2', '3'].map(p => '<button type="button" data-p="' + p + '" class="p' + p + (m.priority === p ? ' on' : '') + '">' + p + '<span>' + PRN[p] + '</span></button>').join('') + '</div><input type="hidden" name="priority" value="' + esc(m.priority || '') + '">' +
+      '<p class="optional">' + (isNew ? 'Any one is enough to save: a selfie, the company or their name. Everything else — the priority too — can be added later' + (S.reading ? ', and Gemini fills what it can from a card.' : '.') : 'Everything below is optional.') + '</p>' +
       '<div class="g2">' + UI.field('Email', '<input class="in" type="email" name="email" inputmode="email" autocomplete="off" value="' + esc(m.email || '') + '">') + UI.field('Phone', '<input class="in" type="tel" name="phone" value="' + esc(m.phone || '') + '">') + '</div>' +
       '<div class="g2">' + UI.field('Job title', '<input class="in" name="title" value="' + esc(m.title || '') + '">') + UI.field('Country', UI.pick('country', 'country', m.country || '')) + '</div>' +
       '<div class="g3">' + UI.field('Follow up by', '<input class="in" type="date" name="nextDate" value="' + esc(m.nextDate || '') + '">') + UI.field('Who follows up', '<select class="in" name="owner">' + ownOpts + '</select>') +
@@ -775,19 +786,14 @@
     el._look = look;
     if (m.id) look();
   }
-  /* The three that are always needed: the company, the person met, the priority. A card still to be read
-     (no signal) stands in for the first two — it is read when it is sent. The boxes missing are lit up. */
-  function needThree(el, x, cardToRead) {
-    const miss = [];
-    if (!x.company && !cardToRead) miss.push(['company', 'the company']);
-    if (!x.name && !cardToRead) miss.push(['name', 'the person met']);
-    if (!x.priority) miss.push(['priority', 'a priority']);
+  /* Any one thing to know them by is enough (his call, 26 Nov 2026): a selfie or card, the company, or their name.
+     Everything else — the priority too — can be added later; those wait under "still to finish". */
+  function needThree(el, x, photo) {
     $$('.need', el).forEach(f => f.classList.remove('need'));
-    if (!miss.length) return;
-    miss.forEach(f => { const box = f[0] === 'priority' ? el.querySelector('.seg') : el.querySelector('[name=' + f[0] + ']'); if (box) box.classList.add('need'); });
+    if (x.company || x.name || photo) return;
+    ['company', 'name'].forEach(k => { const box = el.querySelector('[name=' + k + ']'); if (box) box.classList.add('need'); });
     const first = el.querySelector('.need'); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    const said = miss.map(f => f[1]).join(', ').replace(/, ([^,]*)$/, ' and $1');
-    throw new Error(said.charAt(0).toUpperCase() + said.slice(1) + ', please' + (miss.some(f => f[0] !== 'priority') ? ' — or take a photo of their card' : '') + '.');
+    throw new Error(x.checked ? 'Type the company or their name from the photo, please.' : 'A selfie, the company or their name, please — any one is enough.');
   }
   /* What an appointment sheet adds: its slot, everyone else listed (tap the one actually met to swap them in), and JOR's research. */
   function sheetBits(m) {
@@ -866,7 +872,7 @@
         async function readCard(img) {
           readDone = false;
           if (!S.reading) { readBox.innerHTML = '<div class="readbox off">' + I('warn', 'sm') + '<span>Gemini isn’t switched on yet, so the card is kept with them but not read.</span></div>'; return; }
-          readBox.innerHTML = '<div class="readbox wait">' + I('spark', 'sm') + '<span>Gemini is reading it… keep going, the boxes fill themselves.</span></div>';
+          readBox.innerHTML = '<div class="readbox wait">' + I('spark', 'sm') + '<span>Gemini is reading it… no need to wait. Press Save &amp; next and it fills them in on its own.</span></div>';
           try {
             const r = await API.call('met.read', { photo: { data: img.data } }, { wait: 45000 });
             if (!r.draft) { readBox.innerHTML = '<div class="readbox off">' + I('warn', 'sm') + '<span>Couldn’t read it just now — it is read when it is sent.</span></div>'; return; }
@@ -888,16 +894,16 @@
             const key = uid(), x = Object.assign(formValues(el), { showId, key });
             delete x.status;
             if (shots.read) { x.tags = shots.read.tags; x.summary = shots.read.summary; x.readText = shots.read.notes; }
-            needThree(el, x, !!shots.card && !readDone);
+            needThree(el, x, !!(shots.selfie || shots.card));
             try { localStorage.setItem('jorshows.lastShow', showId); } catch (e) { }
             /* On the phone at once, sent behind. */
             const local = 'tmp' + key;
-            S.met.push(Object.assign({ id: local, by: S.me.id, owner: x.owner || S.me.id, status: 'new', created: new Date().toISOString().slice(0, 19), read: x.readText || '', check: '', _local: true, _photo: (shots.selfie || shots.card || {}).thumb || '' }, x));
+            S.met.push(Object.assign({ id: local, by: S.me.id, owner: x.owner || S.me.id, status: 'new', created: new Date().toISOString().slice(0, 19), read: x.readText || '', check: '', _local: true, _photo: (shots.selfie || shots.card || {}).thumb || '', _shots: ['selfie', 'card'].filter(k => shots[k]) }, x));
             await API.keep();
             const photos = {};
             ['selfie', 'card'].forEach(k => { if (shots[k]) photos[k] = { data: shots[k].data, thumb: shots[k].thumb }; });
             await API.queue({ a: 'met.save', body: { met: x, photos, read: !readDone && !!shots.card }, after: 'met', local });
-            UI.toast((x.name || x.company || 'Saved') + ' — saved.');
+            UI.toast((x.name || x.company || 'Saved') + ' — saved.' + (Object.keys(photos).length ? ' The photos send on their own — carry on.' : ''));
             close(); paint();
             if (next) capture();
           } catch (e) { UI.toast(e.message, 6000); btns.forEach(b => b.disabled = false); }
@@ -920,12 +926,13 @@
     const co = m._ck && links().companies[m._ck];
     UI.dialog({
       title: (m.name || m.company || 'Someone met') + ' — ' + s.name, wide: true,
-      body: (m._local ? '<div class="warnbox" style="margin-bottom:12px">' + I('nosignal', 'sm') + ' Still on this phone — it can be changed once it has gone to Trade Shows.</div>' : '') +
+      body: (m._local ? '<div class="warnbox" style="margin-bottom:12px">' + I('nosignal', 'sm') + ' Still sending. You can add a photo now; the rest can be changed once it has gone to Trade Shows.</div>' : '') +
         (m.check === 'yes' ? '<div class="warnbox" style="margin-bottom:12px">' + I('warn', 'sm') + ' Read from a scanned sheet — check it against the picture, then press “Looks right”.</div>' : '') +
         (m.rfps ? '<div class="okbox" style="margin-bottom:12px">' + I('check', 'sm') + ' Since ' + esc(s.name) + ': ' + m.rfps + ' RFP' + (m.rfps === 1 ? '' : 's') + (m.groups ? ', ' + m.groups + ' became a group' : '') + ' in JORIS — ' + m.refs.map(esc).join(', ') + '</div>' : '') +
         (others.length || co ? '<div class="links">' + (others.length ? I('user', 'sm') + ' Also met at ' + others.map(x => '<a href="#" data-goto="' + esc(x.id) + '">' + esc(showOf(x.showId).name) + '</a>').join(', ') + '. ' : '') +
           (co ? '<a href="#" data-co="' + esc(co.key) + '">' + I('grid', 'sm') + ' Everyone from ' + esc(co.name) + ' (' + Object.keys(co.people).length + ')</a>' : '') + '</div>' : '') +
         (photos ? '<div class="photos3">' + photos + '</div>' : '') +
+        addShots(m) +
         (m.summary ? '<p style="margin:0 0 8px"><b>' + I('spark', 'sm') + ' ' + esc(m.summary) + '</b></p>' : '') +
         readField(m, 'Read from the photo') +
         sheetBits(m) + personForm(m, false) + '<p class="mini" style="color:var(--ink-3);margin-top:10px">Met by ' + esc(nameOf(m.by) || 'someone who has left') + (m.created ? ' · put in ' + esc(UI.when(m.created)) : '') + '</p>',
@@ -934,7 +941,8 @@
       on: (el, close) => {
         el.classList.add('cap');
         wireForm(el, m); wireSheetBits(el); wireRead(el, m);
-        if (m._local) $$('input,select,textarea,button[data-p],[data-reread]', el).forEach(x => { x.disabled = true; });
+        if (m._local) $$('input,select,textarea,button[data-p],[data-reread]', el).forEach(x => { if (!x.dataset.add) x.disabled = true; });
+        wireAddShots(el, m);
         thumbs(el);
         $$('[data-photo]', el).forEach(p => p.onclick = () => bigPhoto(m, p.dataset.photo));
         $$('[data-goto]', el).forEach(a => a.onclick = e => { e.preventDefault(); close(); openMet(a.dataset.goto); });
@@ -945,7 +953,7 @@
             const showId = await showFrom(el);
             const x = Object.assign({}, formValues(el), { id: m.id, rev: m.rev, showId, summary: m.summary });
             if (ok.dataset.checked !== undefined) x.checked = true;
-            if (m.check !== 'yes' || x.checked) needThree(el, x, false);
+            if (m.check !== 'yes' || x.checked) needThree(el, x, x.checked ? false : !!(m.selfie || m.card || m.sheet || (m._shots || []).length));
             /* Changed here at once; the change goes behind. */
             Object.assign(m, x, { tags: x.tags !== undefined ? x.tags : m.tags, check: x.checked ? '' : m.check });
             delete m._h;
@@ -964,6 +972,32 @@
         };
       }
     });
+  }
+  /* A selfie or their card added later (Bernard: the company and a selfie at the stand, the rest afterwards).
+     It goes at once, on its own, even while the first save is still sending — no Save needed. */
+  function addShots(m) {
+    const need = ['selfie', 'card'].filter(k => !m[k] && !(m._shots || []).includes(k));
+    if (!need.length) return '';
+    return '<div class="addshots">' + need.map(k => '<div class="addshot" id="add-' + k + '"><span class="at">' + I(k === 'selfie' ? 'selfie' : 'camera', 'sm') + (k === 'selfie' ? 'Add a selfie' : 'Add their card or notes') + '</span><div class="shotbtns">' +
+      '<label class="btn sm">' + I('camera', 'sm') + 'Take photo<input type="file" accept="image/*" capture="' + (k === 'selfie' ? 'user' : 'environment') + '" hidden data-add="' + k + '"></label>' +
+      '<label class="btn sm">' + I('img', 'sm') + 'From photos<input type="file" accept="image/*" hidden data-add="' + k + '"></label></div></div>').join('') + '</div>';
+  }
+  function wireAddShots(el, m) {
+    $$('[data-add]', el).forEach(inp => inp.addEventListener('change', async () => {
+      const file = inp.files[0]; inp.value = '';
+      if (!file) return;
+      const which = inp.dataset.add, box = el.querySelector('#add-' + which);
+      try {
+        const img = await prepImage(file, which === 'card' ? 2200 : 1600);
+        box.classList.add('has');
+        box.innerHTML = '<img alt="" src="' + img.url + '"><span class="at">' + I('check', 'sm') + (which === 'selfie' ? 'Selfie added' : 'Card added') + ' — it sends on its own' + (which === 'card' && S.reading ? ' and Gemini reads it' : '') + '.</span>';
+        if (which === 'selfie' || !m._photo) m._photo = img.thumb;
+        (m._shots = m._shots || []).push(which);
+        await API.keep();
+        await API.queue({ a: 'met.addphoto', body: { id: m.id, which, rev: m.rev, photo: { data: img.data, thumb: img.thumb } }, after: 'photo' });
+        paint();
+      } catch (e) { UI.toast(e.message, 6000); }
+    }));
   }
   /* What Gemini read from the photo: all of it, in a box that grows to fit, and it can be put right by hand.
      "Read the photo again" reads the whole page afresh (photos read before 26 Nov 2026 got only the handwriting). */

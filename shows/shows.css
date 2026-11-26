@@ -279,3 +279,15 @@ details.profile p{margin:8px 0 2px;color:var(--ink-2)}
   .dlg .b{padding:8px 16px}
   .dlg .ft{padding:10px 16px 14px}
 }
+/* A selfie or card added later, from someone's page */
+.addshots{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:8px;margin-bottom:12px}
+.addshot{border:2px dashed #bcd2c8;border-radius:12px;background:var(--mist-3);padding:10px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;min-width:0}
+.addshot .at{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--ink-2);font-size:14px}
+.addshot.has{border-style:solid;border-color:var(--jor);flex-direction:row;align-items:center}
+.addshot.has img{width:56px;height:56px;object-fit:cover;border-radius:8px;flex:none}
+.addshot.has .at{font-weight:500}
+
+/* Saved with only a selfie, a company or a name: the way back to finish them */
+.sh-todo{display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:inherit;font:inherit;font-size:14px;text-align:left;cursor:pointer}
+.sh-todo:hover{background:rgba(255,255,255,.22)}
+.sh-todo span{flex:1;min-width:0}

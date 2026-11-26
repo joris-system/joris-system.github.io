@@ -144,7 +144,7 @@ window.API = (function () {
         const [k, it] = first;
         try {
           const big = it.a === 'met.save' && it.body.photos && Object.keys(it.body.photos).length;
-          const r = await call(it.a, it.body, { wait: it.a === 'scan.page' || (it.a === 'met.save' && (it.body.read || big)) ? 150000 : 60000 });
+          const r = await call(it.a, it.body, { wait: it.a === 'scan.page' || it.a === 'met.addphoto' || (it.a === 'met.save' && (it.body.read || big)) ? 150000 : 60000 });
           await del('outbox', k); sent++; OUT.why = '';
           if (it.after) await AFTER[it.after](it, r);
           changed('outbox');
@@ -176,8 +176,24 @@ window.API = (function () {
       await keep();
     },
     async met(it, r) {
+      const had = S.met.find(m => m.id === it.local);
       S.met = S.met.filter(m => m.id !== it.local && m.id !== r.met.id);
+      if (had && had._photo && !r.met._photo) r.met._photo = had._photo;
       S.met.push(r.met);
+      /* A photo added while this was still sending waited under the phone's own id: now it has the real one. */
+      if (it.local && it.local !== r.met.id) for (const [k, o] of await pending()) if (o.body && o.body.id === it.local) { o.body.id = r.met.id; await put('outbox', k, o); }
+      await keep();
+    },
+    /* A photo added later: only the photo changed, so a save of the same person waiting behind it moves to the new rev. */
+    async photo(it, r) {
+      const had = S.met.find(m => m.id === r.met.id);
+      S.met = S.met.filter(m => m.id !== r.met.id);
+      if (had && had._photo) r.met._photo = had._photo;
+      S.met.push(r.met);
+      for (const [k, o] of await pending()) {
+        const x = o.body && o.body.met;
+        if (x && x.id === r.met.id && String(x.rev) === String(it.body.rev)) { x.rev = r.met.rev; await put('outbox', k, o); }
+      }
       await keep();
     }
   };
