@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   JOR Shows — talking to the server, and keeping everything on the phone
+   Trade Shows — talking to the server, and keeping everything on the phone
    · The way in is the person's own link: …/#k=BOR-xxxxxxxx. The secret is
      taken out of the address at once and kept on this phone only.
    · Everything the page shows is kept here (IndexedDB), so it opens at once
@@ -45,10 +45,10 @@ window.API = (function () {
       text = await res.text();
     } catch (e) {
       clearTimeout(t);
-      throw e && e.name === 'AbortError' ? fail('JOR Shows took over ' + Math.round(wait / 1000) + ' seconds to answer — it will try again.', 'slow') : fail(navigator.onLine === false ? 'No signal on this phone.' : 'Couldn’t reach JOR Shows just now.', 'offline');
+      throw e && e.name === 'AbortError' ? fail('Trade Shows took over ' + Math.round(wait / 1000) + ' seconds to answer — it will try again.', 'slow') : fail(navigator.onLine === false ? 'No signal on this phone.' : 'Couldn’t reach Trade Shows just now.', 'offline');
     }
     clearTimeout(t);
-    if (!res.ok) throw fail('JOR Shows’ server answered ' + res.status + ' — it will try again.', 'server');
+    if (!res.ok) throw fail('Trade Shows’ server answered ' + res.status + ' — it will try again.', 'server');
     try { j = JSON.parse(text); }
     catch (e) { const said = ((/<title>([^<]*)/i.exec(text) || [])[1] || text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim().slice(0, 160); throw fail('Google sent back a page instead of an answer: “' + said + '”', 'server'); }
     if (!j.ok) {

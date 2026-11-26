@@ -1,4 +1,4 @@
-/* JOR Shows — small pieces the page uses: escaping, icons, dialogs, the toast, dates, pick-from-a-list.
+/* Trade Shows — small pieces the page uses: escaping, icons, dialogs, the toast, dates, pick-from-a-list.
    Taken from JORIS so the two look and work alike. */
 window.UI = (function () {
   'use strict';

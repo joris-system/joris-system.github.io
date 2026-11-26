@@ -1,7 +1,7 @@
 {
-  "name": "JOR Shows",
-  "short_name": "JOR Shows",
-  "description": "Who JOR met at each show and conference",
+  "name": "JOR Trade Shows",
+  "short_name": "Trade Shows",
+  "description": "Who JOR met at each trade show and conference",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

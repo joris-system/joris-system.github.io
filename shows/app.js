@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   JOR Shows — the page
+   Trade Shows — the page
    · Met someone: the show on today and today's date already in, a selfie,
      the card or the notes read by Gemini, priority 1 high to 3 low, the
      follow-up. Saved at once on the phone, sent behind.
@@ -13,26 +13,28 @@
   const $ = s => document.querySelector(s), $$ = (s, el) => [...(el || document).querySelectorAll(s)];
   const esc = UI.esc, I = UI.icon, D = UI.D, RU = UI.RU;
   let S = null, view = 'dash', MET = [];          // MET: the meetings that happened (planned ones are in "Today's meetings")
-  const F = { q: '', show: '', pr: '', region: '', owner: '', status: 'open', due: false, sort: 'new' };
+  const F = { q: '', show: '', pr: '', loc: '', owner: '', status: 'open', due: false, sort: 'new' };
   const MAPV = { mode: 'shows' };
 
   /* ── The way in: no link on this phone, nothing to show ── */
   const standalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
   const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  /* iPhone: never zoom in by itself when a box is tapped (it still lets a person pinch to zoom). */
+  if (isIOS()) { const vp = document.querySelector('meta[name=viewport]'); if (vp && !/maximum-scale/.test(vp.content)) vp.content += ',maximum-scale=1'; }
   if (!API.key()) { if (API.team()) whoAreYou(); else noLink(); return; }
   function noLink(msg) {
     const home = standalone();
-    document.body.innerHTML = '<div class="gate"><div class="gatecard"><img data-logo alt="JOR"><h1>JOR Shows</h1><p>' + esc(msg || (home ? 'Paste the JOR Shows team link here, once — the one sent to you.' : 'Open the JOR Shows team link on this phone — the one sent to you.')) + '</p>' +
+    document.body.innerHTML = '<div class="gate"><div class="gatecard"><img data-logo alt="JOR"><h1>Trade Shows</h1><p>' + esc(msg || (home ? 'Paste the Trade Shows team link here, once — the one sent to you.' : 'Open the Trade Shows team link on this phone — the one sent to you.')) + '</p>' +
       (home ? '<input class="in" id="lnk" placeholder="https://…#t=…" autocomplete="off" style="margin:4px 0 10px"><div class="acts"><button class="btn" id="lpaste">Paste</button><button class="btn p" id="lgo">Open</button></div>' : '') +
-      '<p class="mini" style="color:var(--ink-3)">No link? Ask whoever looks after JOR Shows.</p></div></div>';
+      '<p class="mini" style="color:var(--ink-3)">No link? Ask whoever looks after Trade Shows.</p></div></div>';
     $$('img[data-logo]').forEach(i => { i.src = window.JOR_MARKS.logo; });
     if (!home) return;
-    const go = () => { const m = /[#&]([tk])=([A-Za-z0-9-]{20,48})/.exec($('#lnk').value); if (!m) { UI.toast('That isn’t the JOR Shows link — it has #t= in it.'); return; } location.replace(location.pathname + '#' + m[1] + '=' + m[2]); location.reload(); };
+    const go = () => { const m = /[#&]([tk])=([A-Za-z0-9-]{20,48})/.exec($('#lnk').value); if (!m) { UI.toast('That isn’t the Trade Shows link — it has #t= in it.'); return; } location.replace(location.pathname + '#' + m[1] + '=' + m[2]); location.reload(); };
     $('#lgo').onclick = go;
     $('#lpaste').onclick = async () => { try { $('#lnk').value = await navigator.clipboard.readText(); go(); } catch (e) { $('#lnk').focus(); } };
   }
 
-  /* "Who are you?" — once on each phone. Whoever looks after JOR Shows types their PIN too. */
+  /* "Who are you?" — once on each phone. Whoever looks after Trade Shows types their PIN too. */
   async function whoAreYou(msg) {
     document.body.innerHTML = '<div class="gate"><div class="gatecard who-c"><img data-logo alt="JOR"><h1>Who are you?</h1><p>' + esc(msg || 'Tap your name — once on this phone. It opens straight in after that.') + '</p><div id="names"><div class="empty">Loading…</div></div><div id="pinbox"></div></div></div>';
     $$('img[data-logo]').forEach(i => { i.src = window.JOR_MARKS.logo; });
@@ -54,7 +56,7 @@
     $$('[data-id]', $('#names')).forEach(b => b.onclick = () => {
       const p = r.people.find(x => x.id === b.dataset.id);
       if (!p.pin) { join(p); return; }
-      $('#pinbox').innerHTML = '<label class="f" style="margin-top:12px"><span>' + esc(p.name) + ' — your PIN</span><input class="in" id="pin" inputmode="numeric" type="password" autocomplete="off" maxlength="8"></label><button class="btn p" id="pingo">Open JOR Shows</button>';
+      $('#pinbox').innerHTML = '<label class="f" style="margin-top:12px"><span>' + esc(p.name) + ' — your PIN</span><input class="in" id="pin" inputmode="numeric" type="password" autocomplete="off" maxlength="8"></label><button class="btn p" id="pingo">Open Trade Shows</button>';
       const go = () => join(p, $('#pin').value.trim());
       $('#pingo').onclick = go; $('#pin').onkeydown = e => { if (e.key === 'Enter') go(); }; $('#pin').focus();
     });
@@ -75,7 +77,7 @@
     if (ios && API.key()) {
       const at = location.origin + location.pathname + '#k=' + API.key();
       history.replaceState(null, '', at);
-      if (mf) mf.setAttribute('href', 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify({ name: 'JOR Shows', short_name: 'JOR Shows', start_url: at, scope: location.origin + location.pathname, display: 'standalone', background_color: '#ECF1EF', theme_color: '#00A66E',
+      if (mf) mf.setAttribute('href', 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify({ name: 'JOR Trade Shows', short_name: 'Trade Shows', start_url: at, scope: location.origin + location.pathname, display: 'standalone', background_color: '#ECF1EF', theme_color: '#00A66E',
         icons: [{ src: location.origin + location.pathname + 'icon-192.png', sizes: '192x192', type: 'image/png' }, { src: location.origin + location.pathname + 'icon-512.png', sizes: '512x512', type: 'image/png' }] })));
     }
     const chrome = /CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
@@ -83,9 +85,9 @@
     const add = '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
     const el = document.createElement('div');
     el.className = 'inst';
-    el.innerHTML = '<div class="inst-c"><img src="icon-192.png" alt=""><div><b>Put JOR Shows on your home screen</b><span>Open it in one tap at the next show — it works with no signal too.</span></div><button class="inst-x" aria-label="Not now">' + I('x') + '</button></div>' +
-      (ios ? '<ol><li>Tap <b>Share</b> ' + share + (chrome ? ' — top right' : ' — at the bottom of the screen') + '</li><li>Scroll down, tap <b>Add to Home Screen</b> ' + add + '</li><li>Tap <b>Add</b>. Then open JOR Shows from its icon.</li></ol>' + (chrome ? '' : '<div class="inst-arrow"></div>')
-        : '<div class="acts" style="margin-top:10px"><button class="btn p" id="instgo">' + I('down', 'sm') + 'Install JOR Shows</button></div>');
+    el.innerHTML = '<div class="inst-c"><img src="icon-192.png" alt=""><div><b>Put Trade Shows on your home screen</b><span>Open it in one tap at the next show — it works with no signal too.</span></div><button class="inst-x" aria-label="Not now">' + I('x') + '</button></div>' +
+      (ios ? '<ol><li>Tap <b>Share</b> ' + share + (chrome ? ' — top right' : ' — at the bottom of the screen') + '</li><li>Scroll down, tap <b>Add to Home Screen</b> ' + add + '</li><li>Tap <b>Add</b>. Then open Trade Shows from its icon.</li></ol>' + (chrome ? '' : '<div class="inst-arrow"></div>')
+        : '<div class="acts" style="margin-top:10px"><button class="btn p" id="instgo">' + I('down', 'sm') + 'Install Trade Shows</button></div>');
     document.body.appendChild(el);
     const close = () => {
       el.remove();
@@ -180,8 +182,8 @@
 
   /* ══ Drawing ═══════════════════════════════════════════════════════════ */
   function frame() {
-    document.body.innerHTML = '<div class="top"><img data-logo alt="JOR"><div class="tt"><b>JOR Shows</b><span id="syncline">…</span></div><div class="sp"></div>' +
-      (!standalone() && (isIOS() || 'onbeforeinstallprompt' in window) ? '<button class="btn" id="instbtn" title="Put JOR Shows on the home screen">' + I('down', 'sm') + '<span class="pl">Home screen</span></button>' : '') +
+    document.body.innerHTML = '<div class="top"><img data-logo alt="JOR"><div class="tt"><b>Trade Shows</b><span id="syncline">…</span></div><div class="sp"></div>' +
+      (!standalone() && (isIOS() || 'onbeforeinstallprompt' in window) ? '<button class="btn" id="instbtn" title="Put Trade Shows on the home screen">' + I('down', 'sm') + '<span class="pl">Home screen</span></button>' : '') +
       '<div class="who"><span class="nm" id="meName"></span><span class="av" id="meAv">?</span></div></div>' +
       '<div class="page"><div id="note"></div><div id="today"></div><div id="hero"></div><div class="sh-tabs" id="tabs"></div><div id="view"><div class="empty">Loading…</div></div></div>';
     $$('img[data-logo]').forEach(i => { i.src = window.JOR_MARKS.logo; });
@@ -205,7 +207,7 @@
       '<span class="sy">' + I('check', 'sm') + 'Up to date' + (S.syncedAt ? ' · ' + new Date(S.syncedAt).toTimeString().slice(0, 5) : '') + '</span>';
     const why = API.OUT.why;
     $('#note').innerHTML = n ? '<div class="outbox' + (API.OUT.busy ? ' going' : '') + '">' + I(API.OUT.busy ? 'refresh' : 'nosignal') + '<span class="sp">' +
-      (API.OUT.busy ? 'Sending ' + n + (n === 1 ? ' thing' : ' things') + ' to JOR Shows… (photos can take a little while)' : n + (n === 1 ? ' thing is' : ' things are') + ' saved on this phone, waiting to go.' + (why ? '<br><small>' + esc(why) + '</small>' : '')) +
+      (API.OUT.busy ? 'Sending ' + n + (n === 1 ? ' thing' : ' things') + ' to Trade Shows… (photos can take a little while)' : n + (n === 1 ? ' thing is' : ' things are') + ' saved on this phone, waiting to go.' + (why ? '<br><small>' + esc(why) + '</small>' : '')) +
       '</span>' + (API.OUT.busy ? '' : '<button class="btn sm" id="oflush">Send now</button>') + '<button class="btn sm" id="oshow">Show me</button></div>' : '';
     const b = $('#oflush'); if (b) b.onclick = () => API.flush();
     const sm = $('#oshow'); if (sm) sm.onclick = waitingDialog;
@@ -221,7 +223,7 @@
       foot: '<button class="btn" data-x>Close</button>' + (list.length ? '<button class="btn p" data-go>Send now</button>' : ''),
       on: (el, close) => {
         $$('[data-k]', el).forEach(b => b.onclick = async () => {
-          if (!(await UI.confirm('Remove this from the phone?', 'It won’t go to JOR Shows. If it already got there, it stays there.', 'Remove', true))) return;
+          if (!(await UI.confirm('Remove this from the phone?', 'It won’t go to Trade Shows. If it already got there, it stays there.', 'Remove', true))) return;
           const it = (list.find(x => x[0] === b.dataset.k) || [])[1] || {};
           await API.removeWaiting(b.dataset.k);
           if (it.local) S.met = S.met.filter(m => !(m._local && m.id === it.local));      // a new one that never went: off the list too
@@ -258,7 +260,9 @@
       return '<div class="sh-now"><span class="live"></span><div><b>' + esc(s.name) + ' is on today</b><div style="opacity:.85;font-size:13px">' + n + ' met so far' + (mine && mine !== n ? ' · ' + mine + ' by you' : '') + (s.city ? ' · ' + esc(s.city) : '') + '</div></div></div>'; }).join('');
     const kpi = (v, label, go, cls) => '<div class="sh-kpi ' + (cls || '') + '"' + (go ? ' data-go="' + go + '"' : '') + '><b data-count="' + v + '">' + v + '</b><span>' + label + '</span></div>';
     $('#hero').innerHTML = '<div class="sh-hero"><div class="row"><div><h2>Who we met</h2><p>Every show and conference, and what came of it.</p></div></div>' +
-      '<button class="btn met big" id="metbtn">' + I('camera', 'lg') + 'Met someone</button>' + nowLine +
+      '<button class="btn met big" id="metbtn">' + I('camera', 'lg') + 'Met someone</button>' +
+      '<div class="sh-more"><button class="btn addshow" id="addshow">' + I('plus', 'sm') + 'Add a trade show</button>' +
+      '<form class="sh-find" id="hfind" role="search">' + I('search', 'sm') + '<input id="hq" type="search" enterkeyhint="search" autocomplete="off" placeholder="Find anyone — name, place, notes…"></form></div>' + nowLine +
       '<div class="sh-kpis">' + kpi(S.shows.length, S.shows.length === 1 ? 'show' : 'shows', 'map') + kpi(f.met, 'people met', 'people') + kpi(f.companies, 'companies', 'companies') +
       kpi(f.p1, 'priority 1', 'p1', 'gold') + kpi(f.mineDue, 'your follow-ups this week', 'due') + kpi(f.rfpCos, 'companies sent an RFP', 'rfp', 'gold') + '</div></div>';
     if (!counted) { counted = true; countUp($('#hero')); }
@@ -271,6 +275,9 @@
       go(g === 'map' ? 'map' : g === 'companies' ? 'companies' : 'people');
     });
     $('#metbtn').onclick = () => capture();
+    $('#addshow').onclick = () => addShow();
+    /* Search from the front: every status, every show — whatever they remember. */
+    $('#hfind').onsubmit = e => { e.preventDefault(); const v = $('#hq').value.trim(); if (!v) return; reset(); F.q = v; F.status = ''; go('people'); const q = $('#q'); if (q) { q.focus(); q.setSelectionRange(v.length, v.length); } };
   }
   /* ══ Today's meetings: the sheets printed before the show, in time order, the next one first.
      A tap on 1, 2 or 3 and it is met — six minutes to the next one leaves no time for a form. ══ */
@@ -332,7 +339,7 @@
     paint();
     const t = $('#tabs'); if (t && window.scrollY > t.offsetTop) window.scrollTo({ top: t.offsetTop - 70, behavior: 'smooth' });
   }
-  function reset() { Object.assign(F, { q: '', show: '', pr: '', region: '', owner: '', status: 'open', due: false, sort: 'new' }); }
+  function reset() { Object.assign(F, { q: '', show: '', pr: '', loc: '', owner: '', status: 'open', due: false, sort: 'new' }); }
 
   /* ══ Dashboard ════════════════════════════════════════════════════════ */
   function dash() {
@@ -347,8 +354,9 @@
       const m = MET.filter(x => x.showId === s.id), n = m.length, c = p => m.filter(x => (x.priority || '0') === p).length, w = p => n ? (100 * c(p) / n).toFixed(1) : 0;
       const cos = new Set(m.map(x => x._ck).filter(Boolean)), rf = [...cos].filter(k => lk.companies[k] && lk.companies[k].rfps.some(j => j.reg >= s.starts)).length;
       const due = m.filter(x => x.status === 'new' && x.nextDate && x.nextDate <= today()).length, ck = m.filter(x => x.check === 'yes').length, pl = S.met.filter(x => x.showId === s.id && x.planned).length;
-      return '<div class="scard' + (isOn(s) ? ' is-on' : '') + '" data-show="' + esc(s.id) + '">' + (isOn(s) ? '<span class="on">ON TODAY</span>' : '') +
-        '<div class="nm">' + esc(s.name) + '</div><div class="pl">' + esc([s.city, country(s.country)].filter(Boolean).join(', ')) + (s.starts ? ' · ' + esc(dates(s)) : '') + '</div>' +
+      const soon = s.starts && s.starts > today() ? D.diffDays(today(), s.starts) : 0;
+      return '<div class="scard' + (isOn(s) ? ' is-on' : soon ? ' is-soon' : '') + '" data-show="' + esc(s.id) + '">' + (isOn(s) ? '<span class="on">ON TODAY</span>' : soon ? '<span class="on soon">' + (soon === 1 ? 'TOMORROW' : 'IN ' + soon + ' DAYS') + '</span>' : '') +
+        '<div class="nm">' + esc(s.name) + '</div><div class="pl">' + esc([s.city, country(s.country)].filter(Boolean).join(', ')) + (s.starts ? ' · ' + esc(dates(s)) : '') + (soon && s.by && nameOf(s.by) ? ' · added by ' + esc(nameOf(s.by)) : '') + (s._local ? ' · sending…' : '') + '</div>' +
         '<div class="big"><b>' + n + '</b><span>' + (n === 1 ? 'person met' : 'people met') + ' · ' + cos.size + (cos.size === 1 ? ' company' : ' companies') + '</span></div>' +
         '<div class="pbar">' + ['1', '2', '3', '0'].map(p => '<i class="p' + p + '" style="width:' + w(p) + '%"></i>').join('') + '</div>' +
         '<div class="foot"><span>' + prBadge('1') + ' <b>' + c('1') + '</b></span><span>' + prBadge('2') + ' <b>' + c('2') + '</b></span><span>' + prBadge('3') + ' <b>' + c('3') + '</b></span>' +
@@ -377,7 +385,7 @@
         topTags.map(t => '<button class="chip" data-tag="' + esc(t) + '" style="margin:0 6px 6px 0">' + esc(t) + ' <b style="color:var(--jor-dark)">' + tagCount[t] + '</b></button>').join('') + '</div></div>' : '') + '</div>';
     requestAnimationFrame(() => $$('.hb i').forEach(i => { i.style.width = i.dataset.w + '%'; }));
     $$('[data-show]').forEach(c => c.onclick = () => { reset(); F.show = c.dataset.show; F.status = ''; go('people'); });
-    $$('[data-country]').forEach(c => c.onclick = () => { reset(); F.q = country(c.dataset.country); F.status = ''; go('people'); });
+    $$('[data-country]').forEach(c => c.onclick = () => { reset(); F.loc = 'c:' + c.dataset.country; F.status = ''; go('people'); });
     $$('[data-by]').forEach(c => c.onclick = () => { reset(); F.q = nameOf(c.dataset.by); F.status = ''; go('people'); });
     $$('[data-tag]').forEach(c => c.onclick = () => { reset(); F.q = c.dataset.tag; F.status = ''; go('people'); });
     const sd = $('#seedue'); if (sd) sd.onclick = e => { e.preventDefault(); reset(); F.due = true; go('people'); };
@@ -386,10 +394,10 @@
   /* ══ People: one search box for everything ═══════════════════════════ */
   function people() {
     const opt = (v, t, cur) => '<option value="' + esc(v) + '"' + (cur === v ? ' selected' : '') + '>' + esc(t) + '</option>';
-    $('#view').innerHTML = '<div class="sh-search">' + I('search') + '<input id="q" type="search" autocomplete="off" placeholder="Search names, companies, emails, shows, places — and the notes" value="' + esc(F.q) + '"></div>' +
+    $('#view').innerHTML = '<div class="sh-search">' + I('search') + '<input id="q" type="search" autocomplete="off" placeholder="Name, company, place, month, notes…" value="' + esc(F.q) + '"></div>' +
       '<div class="sh-filters"><select id="fshow">' + opt('', 'Every show', F.show) + S.shows.slice().sort((a, b) => (b.starts || '').localeCompare(a.starts || '')).map(s => opt(s.id, s.name, F.show)).join('') + '</select>' +
       ['', '1', '2', '3'].map(p => '<button class="chip' + (F.pr === p ? ' on' : '') + '" data-pr="' + p + '">' + (p ? prBadge(p) + ' ' + PRN[p] : 'Any priority') + '</button>').join('') +
-      '<select id="freg">' + opt('', 'Anywhere', F.region) + Object.keys(REGIONS).map(r => opt(r, REGIONS[r], F.region)).join('') + '</select>' +
+      locSelect(opt) +
       '<select id="fown">' + opt('', 'Anyone’s', F.owner) + opt(S.me.id, 'Mine to follow up', F.owner) + S.people.filter(p => p.id !== S.me.id).map(p => opt(p.id, p.name, F.owner)).join('') + '</select>' +
       '<select id="fst">' + [['open', 'To follow up'], ['', 'Every status'], ['done', 'Followed up'], ['cold', 'Gone cold']].map(o => opt(o[0], o[1], F.status)).join('') + '</select>' +
       '<button class="chip' + (F.due ? ' on' : '') + '" id="fdue">' + I('clock', 'sm') + 'Due now</button>' +
@@ -397,25 +405,49 @@
       '<p class="sh-count" id="count"></p><div class="mlist" id="mlist"></div>';
     const q = $('#q');
     q.oninput = () => { F.q = q.value; clearTimeout(q._t); q._t = setTimeout(list, 100); };
-    [['fshow', 'show'], ['freg', 'region'], ['fown', 'owner'], ['fst', 'status'], ['fsort', 'sort']].forEach(([id, k]) => { $('#' + id).onchange = e => { F[k] = e.target.value; list(); }; });
+    [['fshow', 'show'], ['floc', 'loc'], ['fown', 'owner'], ['fst', 'status'], ['fsort', 'sort']].forEach(([id, k]) => { $('#' + id).onchange = e => { F[k] = e.target.value; list(); }; });
     $('#fdue').onclick = () => { F.due = !F.due; $('#fdue').classList.toggle('on', F.due); list(); };
     $$('[data-pr]').forEach(b => b.onclick = () => { F.pr = b.dataset.pr; $$('[data-pr]').forEach(x => x.classList.toggle('on', x === b)); list(); });
     list();
   }
+  /* Location: where they are from (a part of the world, or a country), or where we met them (the show's city). */
+  const placeOf = s => s.city || country(s.country) || '';
+  function locSelect(opt) {
+    const from = {}, at = {};
+    MET.forEach(m => { if (m.country) from[m.country] = (from[m.country] || 0) + 1; const p = placeOf(showOf(m.showId)); if (p) at[fold(p)] = at[fold(p)] || p; });
+    S.shows.forEach(s => { const p = placeOf(s); if (p && !at[fold(p)]) at[fold(p)] = p; });
+    const regs = Object.keys(REGIONS).filter(r => Object.keys(from).some(c => REGION_OF[c] === r));
+    const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+    return '<select id="floc" title="Location">' + opt('', 'Anywhere', F.loc) +
+      (regs.length ? '<optgroup label="Where they’re from">' + regs.map(r => opt('r:' + r, REGIONS[r], F.loc)).join('') +
+        Object.keys(from).sort((a, b) => byName(country(a), country(b))).map(c => opt('c:' + c, country(c) + ' (' + from[c] + ')', F.loc)).join('') + '</optgroup>' : '') +
+      (Object.keys(at).length ? '<optgroup label="Where we met them">' + Object.keys(at).sort((a, b) => byName(at[a], at[b])).map(k => opt('s:' + k, 'Met in ' + at[k], F.loc)).join('') + '</optgroup>' : '') + '</select>';
+  }
+  function inLoc(m, v) {
+    const k = v.slice(2);
+    return v[0] === 'r' ? REGION_OF[m.country] === k : v[0] === 'c' ? m.country === k : fold(placeOf(showOf(m.showId))) === k;
+  }
   function hay(m) {
     const s = showOf(m.showId);
     return fold([m.name, m.company, m.title, m.email, m.phone, m.city, country(m.country), m.country, REGIONS[REGION_OF[m.country]], s.name, s.city, country(s.country),
-      m.notes, m.read, m.tags, m.summary, m.nextStep, m.others, m.profile, m.slot, nameOf(m.by), nameOf(m.owner), (m.refs || []).join(' '), m.priority ? 'p' + m.priority : ''].join('   '));
+      m.notes, m.read, m.tags, m.summary, m.nextStep, m.others, m.profile, m.slot, nameOf(m.by), nameOf(m.owner), (m.refs || []).join(' '), m.priority ? 'p' + m.priority : '',
+      whenWords(m.met), m.website, String(m.phone || '').replace(/\D/g, '')].join('   '));
   }
-  function filtered() {
+  /* "March", "Mar 2026", "2026": the month they were met is something people remember. */
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function whenWords(d) {
+    const x = /^(\d{4})-(\d{2})/.exec(d || '');
+    return x ? MONTHS[+x[2] - 1] + ' ' + x[1] + ' ' + MONTHS[+x[2] - 1].slice(0, 3) + ' ' + d : '';
+  }
+  function filtered(anyStatus) {
     links();
     const words = fold(F.q).split(/\s+/).filter(Boolean);
     const out = MET.filter(m => {
       if (F.show && m.showId !== F.show) return false;
       if (F.pr && m.priority !== F.pr) return false;
-      if (F.region && REGION_OF[m.country] !== F.region) return false;
+      if (F.loc && !inLoc(m, F.loc)) return false;
       if (F.owner && (m.owner || m.by) !== F.owner) return false;
-      if (F.status === 'open' ? m.status !== 'new' : F.status && m.status !== F.status) return false;
+      if (!anyStatus && (F.status === 'open' ? m.status !== 'new' : F.status && m.status !== F.status)) return false;
       if (F.due && !(m.status === 'new' && m.nextDate && m.nextDate <= today())) return false;
       if (words.length) { const h = m._h || (m._h = hay(m)); if (!words.every(w => h.indexOf(w) >= 0)) return false; }
       return true;
@@ -453,7 +485,11 @@
   }
   function list() {
     const rows = filtered(), words = fold(F.q).split(/\s+/).filter(Boolean), shown = rows.slice(0, 300);
-    $('#count').textContent = rows.length + (rows.length === 1 ? ' person' : ' people') + (F.show ? ' met at ' + showOf(F.show).name : '') + (F.q ? ' matching “' + F.q + '”' : '');
+    /* Searching for someone: those already followed up (or gone cold) are said, one tap away. */
+    const more = F.status && (F.q || F.loc) ? filtered(true).length - rows.length : 0;
+    $('#count').innerHTML = esc(rows.length + (rows.length === 1 ? ' person' : ' people') + (F.show ? ' met at ' + showOf(F.show).name : '') + (F.q ? ' matching “' + F.q + '”' : '')) +
+      (more > 0 ? ' · <a href="#" id="allst">' + more + ' more already followed up or gone cold — show them</a>' : '');
+    const al = $('#allst'); if (al) al.onclick = e => { e.preventDefault(); F.status = ''; $('#fst').value = ''; list(); };
     $('#mlist').innerHTML = shown.length ? shown.map(m => row(m, words)).join('') + (rows.length > shown.length ? '<p class="sh-count">… and ' + (rows.length - shown.length) + ' more — search to narrow it down.</p>' : '') :
       '<div class="empty">' + (MET.length ? 'Nobody matches that. Try fewer words, or “Every status”.' : 'Nobody met yet.') + '</div>';
     $$('#mlist .mrow').forEach(r => r.onclick = () => openMet(r.dataset.id));
@@ -582,7 +618,7 @@
     box.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
     $$('[data-s]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); if (e.target.closest('[data-edit]')) return; reset(); F.show = el.dataset.s; F.status = ''; go('people'); }));
     $$('[data-edit]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); editShow(b.dataset.edit); }));
-    $$('[data-c]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); reset(); F.q = country(el.dataset.c); F.status = ''; go('people'); }));
+    $$('[data-c]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); reset(); F.loc = 'c:' + el.dataset.c; F.status = ''; go('people'); }));
   }
 
   /* A show changed: its name, where it is (city and country — the map follows), its dates. Needs signal. */
@@ -610,6 +646,39 @@
             const r = await API.call('show.save', { show: { id: s.id, name: v('ename'), city: v('ecity'), country: v('ecountry'), starts: v('estarts'), ends: v('eends') } });
             Object.assign(s, r.show); await API.keep(); close(); paint(); UI.toast('Saved' + (r.show.lat !== null ? ' — it’s on the map.' : r.show.country ? ' — on the map in the middle of its country.' : '.'));
           } catch (e) { UI.toast(e.offline ? 'This needs signal — try again in a moment.' : e.message, 6000); }
+        };
+      } });
+  }
+
+  /* A trade show added ahead of time — by anyone on the team. It is on this phone at once and goes to
+     everyone's phone within a minute; on its days "Met someone" has it picked already. Works with no signal. */
+  function addShow() {
+    UI.dialog({ title: 'Add a trade show', wide: true,
+      body: '<p class="sub2" style="margin:0 0 12px">Everyone on the team sees it on their phone within a minute. On the days it’s on, “Met someone” has it picked already.</p>' +
+        '<div class="g2">' + UI.field('Name of the show or conference *', '<input class="in" name="aname" autocomplete="off" placeholder="e.g. ITB Berlin 2027">') + UI.field('City *', '<input class="in" name="acity" autocomplete="off" placeholder="e.g. Berlin">') + '</div>' +
+        '<div class="g3">' + UI.field('Country', UI.pick('acountry', 'country', '')) + UI.field('Starts *', '<input class="in" type="date" name="astarts">') + UI.field('Ends', '<input class="in" type="date" name="aends">') + '</div>',
+      foot: '<button class="btn" data-x>Cancel</button><button class="btn p" data-ok>' + I('check', 'sm') + 'Add the show</button>',
+      on: (el, close) => {
+        const f = n => el.querySelector('[name=' + n + ']'), v = n => f(n).value.trim();
+        f('astarts').addEventListener('change', () => { if (!f('aends').value || f('aends').value < f('astarts').value) f('aends').value = f('astarts').value; });
+        setTimeout(() => f('aname').focus(), 50);
+        el.querySelector('[data-ok]').onclick = async () => {
+          try {
+            if (!v('aname')) { f('aname').classList.add('need'); throw new Error('Give the show a name — like “ITB Berlin 2027”.'); }
+            if (!v('acity') && !v('acountry')) { f('acity').classList.add('need'); throw new Error('Where is it? Type the city.'); }
+            if (!v('astarts')) { f('astarts').classList.add('need'); throw new Error('When does it start?'); }
+            const ends = v('aends') || v('astarts');
+            if (ends < v('astarts')) throw new Error('It ends before it starts.');
+            const twin = S.shows.find(s => s.name.toLowerCase() === v('aname').toLowerCase());
+            if (twin) throw new Error(twin.name + ' is in already' + (twin.starts ? ' (' + dates(twin) + ')' : '') + '.');
+            const key = uid(), local = 'sh' + key;
+            const show = { local, key, name: v('aname'), city: v('acity'), country: v('acountry'), starts: v('astarts'), ends };
+            S.shows.push({ id: local, name: show.name, city: show.city, country: show.country, starts: show.starts, ends: show.ends, lat: null, lng: null, by: S.me.id, _local: true });
+            await API.keep();
+            await API.queue({ a: 'show.save', body: { show }, after: 'show' });
+            close(); paint();
+            UI.toast(show.name + ' added — everyone will see it.');
+          } catch (e) { UI.toast(e.message, 6000); }
         };
       } });
   }
@@ -742,9 +811,10 @@
     });
   }
   function formValues(el) {
-    const v = n => { const f = el.querySelector('[name=' + n + ']'); return f ? (f.type === 'checkbox' ? (f.checked ? 'yes' : '') : f.value.trim()) : undefined; };
+    const v = n => { const f = el.querySelector('[name=' + n + ']'); if (f && n === 'read' && f.dataset.changed !== '1') return undefined;      // the text read from the photo goes only when someone put it right
+    return f ? (f.type === 'checkbox' ? (f.checked ? 'yes' : '') : f.value.trim()) : undefined; };
     const o = {};
-    ['showId', 'met', 'company', 'name', 'title', 'country', 'email', 'phone', 'priority', 'nextDate', 'owner', 'status', 'nextStep', 'notes', 'tags', 'canEmail', 'others'].forEach(k => { const x = v(k); if (x !== undefined) o[k] = x; });
+    ['showId', 'met', 'company', 'name', 'title', 'country', 'email', 'phone', 'priority', 'nextDate', 'owner', 'status', 'nextStep', 'notes', 'tags', 'canEmail', 'others', 'read'].forEach(k => { const x = v(k); if (x !== undefined) o[k] = x; });
     return o;
   }
   /* A new show typed in the form: made on the phone at once, sent first. */
@@ -784,7 +854,7 @@
           if (!file) return;
           const which = inp.dataset.shot, box = el.querySelector('#shot-' + which);
           try {
-            const img = await prepImage(file);
+            const img = await prepImage(file, which === 'card' ? 2200 : 1600);       // a page of notes: sharp enough to read every line
             shots[which] = img;
             box.classList.add('has');
             box.querySelectorAll(':scope > img').forEach(x => x.remove());
@@ -850,21 +920,21 @@
     const co = m._ck && links().companies[m._ck];
     UI.dialog({
       title: (m.name || m.company || 'Someone met') + ' — ' + s.name, wide: true,
-      body: (m._local ? '<div class="warnbox" style="margin-bottom:12px">' + I('nosignal', 'sm') + ' Still on this phone — it can be changed once it has gone to JOR Shows.</div>' : '') +
+      body: (m._local ? '<div class="warnbox" style="margin-bottom:12px">' + I('nosignal', 'sm') + ' Still on this phone — it can be changed once it has gone to Trade Shows.</div>' : '') +
         (m.check === 'yes' ? '<div class="warnbox" style="margin-bottom:12px">' + I('warn', 'sm') + ' Read from a scanned sheet — check it against the picture, then press “Looks right”.</div>' : '') +
         (m.rfps ? '<div class="okbox" style="margin-bottom:12px">' + I('check', 'sm') + ' Since ' + esc(s.name) + ': ' + m.rfps + ' RFP' + (m.rfps === 1 ? '' : 's') + (m.groups ? ', ' + m.groups + ' became a group' : '') + ' in JORIS — ' + m.refs.map(esc).join(', ') + '</div>' : '') +
         (others.length || co ? '<div class="links">' + (others.length ? I('user', 'sm') + ' Also met at ' + others.map(x => '<a href="#" data-goto="' + esc(x.id) + '">' + esc(showOf(x.showId).name) + '</a>').join(', ') + '. ' : '') +
           (co ? '<a href="#" data-co="' + esc(co.key) + '">' + I('grid', 'sm') + ' Everyone from ' + esc(co.name) + ' (' + Object.keys(co.people).length + ')</a>' : '') + '</div>' : '') +
         (photos ? '<div class="photos3">' + photos + '</div>' : '') +
         (m.summary ? '<p style="margin:0 0 8px"><b>' + I('spark', 'sm') + ' ' + esc(m.summary) + '</b></p>' : '') +
-        (m.read ? '<label class="f"><span>The notes as Gemini read them</span></label><div class="readnotes">' + esc(m.read) + '</div>' : '') +
+        readField(m, 'Read from the photo') +
         sheetBits(m) + personForm(m, false) + '<p class="mini" style="color:var(--ink-3);margin-top:10px">Met by ' + esc(nameOf(m.by) || 'someone who has left') + (m.created ? ' · put in ' + esc(UI.when(m.created)) : '') + '</p>',
       foot: (mine && !m._local ? '<button class="btn dngr" data-rm>' + I('trash', 'sm') + 'Remove</button>' : '') + '<span style="flex:1"></span><button class="btn" data-x>Close</button>' +
         (m._local ? '' : m.check === 'yes' ? '<button class="btn p" data-ok data-checked>' + I('check', 'sm') + 'Looks right</button>' : '<button class="btn p" data-ok>Save</button>'),
       on: (el, close) => {
         el.classList.add('cap');
-        wireForm(el, m); wireSheetBits(el);
-        if (m._local) $$('input,select,textarea,button[data-p]', el).forEach(x => { x.disabled = true; });
+        wireForm(el, m); wireSheetBits(el); wireRead(el, m);
+        if (m._local) $$('input,select,textarea,button[data-p],[data-reread]', el).forEach(x => { x.disabled = true; });
         thumbs(el);
         $$('[data-photo]', el).forEach(p => p.onclick = () => bigPhoto(m, p.dataset.photo));
         $$('[data-goto]', el).forEach(a => a.onclick = e => { e.preventDefault(); close(); openMet(a.dataset.goto); });
@@ -887,13 +957,40 @@
         };
         const rm = el.querySelector('[data-rm]');
         if (rm) rm.onclick = async () => {
-          if (!(await UI.confirm('Remove ' + (m.name || m.company || 'this one') + '?', 'They go out of the lists and the counts. Whoever looks after JOR Shows can put them back.', 'Remove', true))) return;
+          if (!(await UI.confirm('Remove ' + (m.name || m.company || 'this one') + '?', 'They go out of the lists and the counts. Whoever looks after Trade Shows can put them back.', 'Remove', true))) return;
           S.met = S.met.filter(x => x.id !== m.id); await API.keep();
           await API.queue({ a: 'met.remove', body: { id: m.id } });
           close(); paint(); UI.toast('Removed.');
         };
       }
     });
+  }
+  /* What Gemini read from the photo: all of it, in a box that grows to fit, and it can be put right by hand.
+     "Read the photo again" reads the whole page afresh (photos read before 26 Nov 2026 got only the handwriting). */
+  function readField(m, label) {
+    if (!m.read && !m.card && !m.sheet) return '';
+    return '<div class="readhead"><span>' + esc(label) + '</span>' + ((m.card || m.sheet) && S.reading ? '<button type="button" class="btn sm" data-reread>' + I('spark', 'sm') + 'Read the photo again</button>' : '') + '</div>' +
+      '<textarea class="in readnotes" name="read" rows="3" placeholder="Nothing read from the photo yet">' + esc(m.read || '') + '</textarea>' +
+      '<p class="readhint">Put right anything Gemini got wrong — it is saved with them, and searched.</p>';
+  }
+  function wireRead(el, m) {
+    const t = el.querySelector('textarea[name=read]');
+    if (!t) return;
+    const fit = () => { t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; };
+    t.addEventListener('input', () => { t.dataset.changed = '1'; fit(); });
+    requestAnimationFrame(fit); setTimeout(fit, 250);
+    const b = el.querySelector('[data-reread]');
+    if (b) b.onclick = async () => {
+      if (t.value.trim() && t.value !== (m.read || '') && !(await UI.confirm('Read the photo again?', 'What you changed in the box is replaced by a fresh reading.', 'Read it again'))) return;
+      b.disabled = true; const was = b.innerHTML; b.innerHTML = I('spark', 'sm') + 'Reading the whole page…';
+      try {
+        const r = await API.call('met.reread', { id: m.id }, { wait: 150000 });
+        Object.assign(m, r.met); delete m._h; await API.keep();
+        t.value = m.read || ''; t.dataset.changed = ''; fit();
+        UI.toast('Read again — check it, then Save.');
+      } catch (e) { UI.toast(e.offline ? 'This needs signal — try again in a moment.' : e.message, 7000); }
+      b.disabled = false; b.innerHTML = was;
+    };
   }
   async function bigPhoto(m, which) {
     const d = UI.dialog({ title: { selfie: 'Selfie', card: 'Card or notes', sheet: 'Sales sheet' }[which] + ' — ' + (m.name || m.company || ''), wide: true, body: '<div class="empty">Loading the photo…</div>' });
@@ -914,11 +1011,11 @@
     if (!m) return;
     UI.dialog({
       title: 'Check: ' + (m.name || m.company || 'a scanned sheet') + ' — ' + showOf(m.showId).name, wide: true,
-      body: '<div class="ckwrap"><div class="pic" id="ckpic"><div class="empty">Loading the sheet…</div></div><div>' + (m.read ? '<label class="f"><span>The handwriting, as Gemini read it</span></label><div class="readnotes">' + esc(m.read) + '</div>' : '') + sheetBits(m) + personForm(m, false) + '</div></div>',
+      body: '<div class="ckwrap"><div class="pic" id="ckpic"><div class="empty">Loading the sheet…</div></div><div>' + readField(m, 'The handwriting, as Gemini read it') + sheetBits(m) + personForm(m, false) + '</div></div>',
       foot: '<button class="btn dngr" data-rm>' + I('trash', 'sm') + 'Not a person — remove</button><span style="flex:1"></span><button class="btn" data-x>Later</button><button class="btn p" data-ok>' + I('check', 'sm') + 'Looks right</button>',
       on: (el, close) => {
         el.classList.add('cap'); el.style.maxWidth = '1100px';
-        wireForm(el, m); wireSheetBits(el);
+        wireForm(el, m); wireSheetBits(el); wireRead(el, m);
         API.call('met.photo', { id: m.id, which: 'sheet' }).then(r => { el.querySelector('#ckpic').innerHTML = '<img alt="The scanned sheet" src="data:' + esc(r.type) + ';base64,' + r.data + '">'; }).catch(e => { el.querySelector('#ckpic').innerHTML = '<p class="err">' + esc(e.message) + '</p>'; });
         el.querySelector('[data-ok]').onclick = async () => {
           try {
@@ -965,7 +1062,7 @@
           if (!files.length) return;
           let showId;
           try { showId = await showFrom(el); await API.flush(); showId = S.shows.some(x => x.id === showId) ? showId : (S.shows.find(x => x.name === (el.querySelector('[name=sname]') || {}).value) || {}).id || showId; } catch (x) { UI.toast(x.message, 6000); return; }
-          if (/^sh/.test(showId) && S.shows.find(x => x.id === showId && x._local)) { UI.toast('The new show hasn’t reached JOR Shows yet — try again when there is signal.', 6000); return; }
+          if (/^sh/.test(showId) && S.shows.find(x => x.id === showId && x._local)) { UI.toast('The new show hasn’t reached Trade Shows yet — try again when there is signal.', 6000); return; }
           await scanFiles(files, showId, el.querySelector('#scanprog'));
           close(); await API.sync().catch(() => { }); if (S.met.some(m => m.check === 'yes')) go('check'); else paint();
         });
@@ -1021,7 +1118,7 @@
         '<button class="btn sm" data-pin="' + esc(p.id) + '">' + I('lock', 'sm') + (p.pin ? 'New PIN' : 'Give a PIN') + '</button>' + (p.phones ? '<button class="btn sm" data-out="' + esc(p.id) + '">Sign out of phones</button>' : '') +
         (p.id !== S.me.id ? '<button class="btn sm dngr" data-leave="' + esc(p.id) + '">Off the team</button>' : '') + '</div></div>').join('') + '</div>' +
       '<div class="g3" style="margin-top:12px;align-items:end">' + UI.field('Name', '<input class="in" id="pname" placeholder="e.g. Bernard O’Reilly">') + UI.field('Initials', '<input class="in" id="pini" maxlength="4" placeholder="BOR">') + UI.field('Email (for the morning follow-ups)', '<input class="in" id="pmail" type="email">') + '</div>' +
-      '<label class="chk"><input type="checkbox" id="padm"> Looks after JOR Shows too (Admin — needs a PIN)</label><div id="padmpin" class="hidden">' + UI.field('Their PIN (4 to 8 numbers)', '<input class="in" id="ppin" inputmode="numeric" maxlength="8">') + '</div>' +
+      '<label class="chk"><input type="checkbox" id="padm"> Looks after Trade Shows too (Admin — needs a PIN)</label><div id="padmpin" class="hidden">' + UI.field('Their PIN (4 to 8 numbers)', '<input class="in" id="ppin" inputmode="numeric" maxlength="8">') + '</div>' +
       '<button class="btn p" id="padd">' + I('plus', 'sm') + 'Add to the team</button></div>' +
       '<div class="panel"><h3>Gemini</h3><p class="sub2">' + (A.gemini ? '<b style="color:var(--jor-dark)">The key is in</b> — kept on Google, never shown again. Cards, notes and scanned sheets are read.' : 'No key yet: photos are kept but not read.') + '</p>' +
       UI.field(A.gemini ? 'Replace the key' : 'Paste the Gemini key', '<input class="in" id="gkey" autocomplete="off" placeholder="Paste the key (AQ.… or AIza…)">', 'Use a paid key (Google AI Studio, with billing on) so cards and notes are never used to train Google’s models.') +
@@ -1051,7 +1148,7 @@
     });
     $$('[data-leave]').forEach(b => b.onclick = async () => {
       const p = A.people.find(x => x.id === b.dataset.leave);
-      if (!(await UI.confirm('Take ' + p.name + ' off the team?', 'Their name goes from “Who are you?” and their phones are signed out at once. Everyone they met stays in JOR Shows.', 'Take them off', true))) return;
+      if (!(await UI.confirm('Take ' + p.name + ' off the team?', 'Their name goes from “Who are you?” and their phones are signed out at once. Everyone they met stays in Trade Shows.', 'Take them off', true))) return;
       try { await API.call('admin.person', { person: { id: p.id, leave: true } }); adminView(); } catch (e) { UI.toast(e.message, 6000); }
     });
     $('#gset').onclick = async () => { try { const r = await API.call('admin.gemini', { key: $('#gkey').value }); UI.toast('The key works — reading with ' + r.model + '.'); await API.sync(); adminView(); } catch (e) { UI.toast(e.message, 7000); } };
@@ -1093,7 +1190,7 @@
     if (!document.querySelector('#view .mrow, #view .scard, #view .panel')) { paint(); route(); } else if (!$('.scrim')) paint();
   } catch (e) {
     if (e.signin) { API.forget(); if (API.team()) whoAreYou(e.message); else noLink(e.message); return; }
-    if (!S) { $('#view').innerHTML = '<div class="empty">No signal, and nothing on this phone yet. Open JOR Shows again when there is signal.</div>'; }
+    if (!S) { $('#view').innerHTML = '<div class="empty">No signal, and nothing on this phone yet. Open Trade Shows again when there is signal.</div>'; }
   }
   /* Kept up to date while it is open: a quick question every minute, and on coming back to it. */
   setInterval(() => { if (!document.hidden) API.sync().then(() => { S = API.S; }).catch(() => { }); }, 60000);

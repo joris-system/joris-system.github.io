@@ -33,7 +33,7 @@
 .sh-search input{width:100%;border:1px solid var(--line);border-radius:14px;padding:14px 14px 14px 42px;font-size:16px;background:#fff;box-shadow:var(--shadow)}
 .sh-search input:focus{outline:2px solid var(--jor);border-color:transparent}
 .sh-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.sh-filters select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:#fff;min-height:38px}
+.sh-filters select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:#fff;min-height:38px;max-width:100%;min-width:0;text-overflow:ellipsis}
 .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-weight:600;cursor:pointer;min-height:36px;display:inline-flex;align-items:center;gap:6px}
 .chip.on{background:var(--jor-dark);border-color:var(--jor-dark);color:#fff}
 .sh-count{color:var(--ink-3);font-size:13px;margin:0 0 8px}
@@ -46,7 +46,7 @@
 .pr.p0{background:var(--line-2);color:var(--ink-3)}
 
 /* ── People met ── */
-.mlist{display:grid;gap:8px}
+.mlist{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
 .mrow{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
 .mrow:hover{border-color:#bcd2c8;box-shadow:var(--shadow)}
 .av2{width:52px;height:52px;border-radius:12px;flex:0 0 auto;background:var(--mist-2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--jor-dark);overflow:hidden;font-size:16px}
@@ -54,7 +54,7 @@
 .mrow .bd{flex:1;min-width:0}
 .mrow .bd b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mrow .bd .l2{color:var(--ink-2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mrow .bd .l3{color:var(--ink-3);font-size:12.5px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mrow .bd .l3{color:var(--ink-3);font-size:12.5px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .mrow .rt{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:0 0 auto}
 .tagc{display:inline-block;background:var(--mist-3);border:1px solid var(--line-2);color:var(--ink-2);border-radius:999px;font-size:11.5px;padding:1px 8px;margin:3px 4px 0 0}
 .won{background:#E5F6EE;color:#0B6B4B;border-radius:999px;font-size:11.5px;font-weight:700;padding:1px 8px}
@@ -140,7 +140,7 @@ mark{background:#FFE9A8;color:inherit;border-radius:3px;padding:0 1px}
 .photos3 .ph{aspect-ratio:4/3;border-radius:12px;background:var(--line-2);overflow:hidden;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:12px}
 .photos3 .ph img{width:100%;height:100%;object-fit:cover}
 .photos3 .ph span{position:absolute;left:6px;bottom:6px;background:rgba(19,37,30,.7);color:#fff;border-radius:6px;padding:1px 7px;font-size:11px}
-.readnotes{background:var(--mist-3);border:1px solid var(--line-2);border-radius:12px;padding:10px 12px;white-space:pre-wrap;font-size:13px;color:var(--ink-2);max-height:180px;overflow:auto;margin-bottom:12px}
+.readnotes{background:var(--mist-3);border:1px solid var(--line-2);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5;color:var(--ink);margin-bottom:4px;resize:vertical;overflow:hidden;min-height:72px}
 .ckwrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px}
 .ckwrap .pic{background:var(--line-2);border-radius:12px;min-height:300px;display:flex;align-items:center;justify-content:center;overflow:auto;max-height:70vh}
 .ckwrap .pic img{max-width:100%;display:block}
@@ -245,3 +245,37 @@ details.profile p{margin:8px 0 2px;color:var(--ink-2)}
 .shot.has > svg, .shot.has > .st, .shot.has > em{display:none}
 .shot.has{justify-content:flex-end;padding-bottom:8px}
 .shot.has .shotbtns .btn{background:rgba(255,255,255,.94)}
+
+/* ── The front: add a show, find anyone ── */
+.sh-more{display:flex;gap:10px;margin-top:10px;position:relative;z-index:1;flex-wrap:wrap}
+.btn.addshow{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.45);color:#fff;font-weight:600;min-height:46px;border-radius:12px;white-space:nowrap}
+.btn.addshow:hover{background:rgba(255,255,255,.22)}
+.sh-find{flex:1;min-width:220px;position:relative;margin:0}
+.sh-find svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none}
+.sh-find input{width:100%;height:46px;border:0;border-radius:12px;padding:0 12px 0 38px;font-size:16px;background:#fff;color:var(--ink)}
+.sh-find input:focus{outline:2px solid var(--on-jor)}
+.scard .on.soon{background:#E7F1FB;color:#1D4E7A}
+.scard.is-soon .nm{padding-right:96px}
+@media (max-width:640px){ .sh-more{flex-direction:column} .btn.addshow{width:100%;justify-content:center} .sh-find{min-width:0} }
+
+/* ── Read from the photo: the whole text, editable ── */
+.readhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 6px;flex-wrap:wrap}
+.readhead>span{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.readhint{margin:0 0 12px;font-size:12px;color:var(--ink-3)}
+
+/* ── Phones: no zooming in on a box, nothing wider than the screen ──
+   An iPhone zooms in on any box with text under 16px, and stays zoomed. */
+@media (max-width:760px), (pointer:coarse){
+  input, select, textarea, .in, .sh-filters select{font-size:16px!important}
+}
+.dlg{max-width:100%;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px)}
+.dlg .b{overflow-x:hidden}
+.dlg .in, .dlg select, .dlg textarea{min-width:0;max-width:100%}
+@supports (-webkit-touch-callout:none){ input[type=date].in{display:block;-webkit-appearance:none;appearance:none;min-height:42px;text-align:left} }
+@media (max-width:640px){
+  .scrim{padding:8px}
+  .dlg{max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px)}
+  .dlg .h{padding:14px 16px 6px;font-size:19px}
+  .dlg .b{padding:8px 16px}
+  .dlg .ft{padding:10px 16px 14px}
+}
